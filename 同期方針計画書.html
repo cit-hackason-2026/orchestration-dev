@@ -1,0 +1,1953 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>同期方針計画書 / Arduino 輪唱システム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F1E6;
+    --paper-2: #ECE5D2;
+    --paper-3: #E2D9BF;
+    --ink: #141311;
+    --ink-2: #3F3A2E;
+    --ink-3: #6B6454;
+    --line: #C9BFA5;
+    --line-2: #B2A684;
+    --coral: #D83B20;
+    --coral-soft: #E88975;
+    --indigo: #1E2B66;
+    --indigo-soft: #5A6BAE;
+    --amber: #B97B10;
+    --amber-soft: #E2B85C;
+    --mint: #2A6B4C;
+    --mint-soft: #66B491;
+    --maxw: 1240px;
+    --radius: 4px;
+    --font-body: 'Inter', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+    --font-ja: 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Noto Serif JP', Georgia, serif;
+    --font-mono: 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.72;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(217,164,59,0.08), transparent 42%),
+      radial-gradient(circle at 82% 88%, rgba(30,43,102,0.05), transparent 45%);
+  }
+
+  ::selection { background: var(--ink); color: var(--paper); }
+
+  a { color: var(--indigo); text-decoration: none; border-bottom: 1px solid var(--indigo-soft); }
+  a:hover { background: var(--indigo); color: var(--paper); }
+
+  /* ============= TOP BAR ============= */
+  .topbar {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(245, 241, 230, 0.88);
+    backdrop-filter: saturate(180%) blur(8px);
+    -webkit-backdrop-filter: saturate(180%) blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--font-serif); font-weight: 600; letter-spacing: 0.02em;
+  }
+  .brand-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--coral);
+    box-shadow: 0 0 0 3px rgba(216,59,32,0.18);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.55; }
+  }
+  .brand small {
+    font-family: var(--font-mono); font-weight: 400; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
+    margin-left: 10px; border-left: 1px solid var(--line); padding-left: 10px;
+  }
+  .topnav {
+    display: flex; gap: 2px; font-size: 12px;
+    font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .topnav a {
+    padding: 6px 10px; border: none; color: var(--ink-2);
+  }
+  .topnav a:hover { background: var(--ink); color: var(--paper); }
+  @media (max-width: 880px) { .topnav { display: none; } }
+
+  /* ============= HERO ============= */
+  .hero {
+    max-width: var(--maxw); margin: 0 auto; padding: 64px 28px 40px;
+    position: relative;
+  }
+  .hero-meta {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+    color: var(--ink-3); text-transform: uppercase;
+    border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 36px;
+  }
+  .hero-meta .left span { color: var(--coral); font-weight: 600; margin-right: 8px; }
+
+  .hero h1 {
+    font-family: var(--font-serif); font-weight: 700;
+    font-size: clamp(44px, 7vw, 92px);
+    line-height: 1.02; letter-spacing: -0.015em;
+    margin: 0 0 8px; color: var(--ink);
+  }
+  .hero h1 .accent { color: var(--coral); font-style: italic; font-weight: 600; }
+  .hero-subtitle {
+    font-family: var(--font-serif); font-weight: 400;
+    font-size: clamp(18px, 2.3vw, 26px);
+    color: var(--ink-2); margin: 0 0 44px; max-width: 780px;
+  }
+  .hero-subtitle em { color: var(--indigo); font-style: italic; }
+
+  .hero-grid {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 44px;
+    align-items: start;
+  }
+  @media (max-width: 960px) { .hero-grid { grid-template-columns: 1fr; } }
+
+  .spec-list { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .spec-row {
+    background: var(--paper); padding: 14px 18px;
+    display: grid; grid-template-columns: 140px 1fr; gap: 20px; align-items: center;
+    font-size: 14px;
+  }
+  .spec-row dt {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0;
+  }
+  .spec-row dd { margin: 0; color: var(--ink); font-family: var(--font-ja); }
+  .spec-row dd b { color: var(--coral); font-weight: 600; }
+
+  .hero-viz {
+    position: relative; padding: 20px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .hero-viz::before {
+    content: ''; position: absolute; inset: 6px; pointer-events: none;
+    border: 1px dashed var(--line-2); border-radius: 2px;
+  }
+  .hero-viz-title {
+    position: absolute; top: -10px; left: 20px; background: var(--paper);
+    padding: 0 10px; font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+  }
+
+  /* ============= LAYOUT ============= */
+  main { max-width: var(--maxw); margin: 0 auto; padding: 0 28px 80px; }
+  section { padding: 60px 0; border-top: 1px solid var(--line); position: relative; }
+  section:first-of-type { border-top: none; padding-top: 40px; }
+
+  .section-head {
+    display: flex; gap: 30px; align-items: baseline;
+    margin-bottom: 36px; flex-wrap: wrap;
+  }
+  .section-num {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em;
+    color: var(--coral); font-weight: 600;
+    border: 1px solid var(--coral); padding: 4px 10px; border-radius: 2px;
+    white-space: nowrap;
+  }
+  .section-title {
+    font-family: var(--font-serif); font-weight: 700;
+    font-size: clamp(28px, 3.6vw, 44px); margin: 0; line-height: 1.1;
+    letter-spacing: -0.01em; flex: 1; min-width: 300px;
+  }
+  .section-kicker {
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.14em; text-transform: uppercase; flex-basis: 100%;
+    margin-top: -12px;
+  }
+
+  h3 {
+    font-family: var(--font-serif); font-weight: 600;
+    font-size: 22px; margin: 40px 0 16px; letter-spacing: -0.005em;
+    display: flex; align-items: center; gap: 12px;
+  }
+  h3::before {
+    content: ''; width: 20px; height: 2px; background: var(--coral);
+    display: inline-block;
+  }
+  h4 {
+    font-family: var(--font-body); font-weight: 600;
+    font-size: 15px; margin: 28px 0 10px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2);
+  }
+
+  p { margin: 0 0 14px; }
+  p.lead {
+    font-family: var(--font-serif); font-size: 19px; line-height: 1.65;
+    color: var(--ink-2); max-width: 820px; margin-bottom: 24px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+  @media (max-width: 820px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ============= CARDS / PANELS ============= */
+  .panel {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 26px;
+    position: relative;
+  }
+  .panel-dark {
+    background: var(--ink); color: #FFFFFF;
+    border-color: var(--ink);
+  }
+  .panel-dark h4 { color: #FFFFFF; }
+  .panel-dark p { color: #FFFFFF; }
+  .panel-dark ul.clean,
+  .panel-dark ul.clean li { color: #FFFFFF; }
+  .panel-dark ul.clean li::before { color: #FFFFFF; }
+  .panel-dark code.inline { background: rgba(255,255,255,0.15); color: #FFFFFF; }
+
+  .callout {
+    border-left: 3px solid var(--coral);
+    padding: 14px 20px; margin: 20px 0;
+    background: rgba(216,59,32,0.06);
+    font-family: var(--font-serif); font-size: 16px; color: var(--ink-2);
+  }
+  .callout b { color: var(--coral); }
+  .callout.indigo { border-color: var(--indigo); background: rgba(30,43,102,0.05); }
+  .callout.indigo b { color: var(--indigo); }
+  .callout.mint { border-color: var(--mint); background: rgba(42,107,76,0.06); }
+  .callout.mint b { color: var(--mint); }
+  .callout.amber { border-color: var(--amber); background: rgba(185,123,16,0.08); }
+  .callout.amber b { color: var(--amber); }
+
+  /* ============= TABLES ============= */
+  table {
+    width: 100%; border-collapse: collapse; margin: 22px 0;
+    font-size: 14px; background: var(--paper);
+    border: 1px solid var(--line);
+  }
+  th, td {
+    text-align: left; padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-3); background: var(--paper-2);
+    font-weight: 600;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: rgba(201,191,165,0.12); }
+  td code, th code { font-family: var(--font-mono); font-size: 12.5px; color: var(--coral); }
+
+  /* ============= CODE BLOCKS ============= */
+  pre {
+    font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65;
+    background: var(--ink); color: var(--paper);
+    padding: 18px 22px; border-radius: var(--radius);
+    overflow-x: auto; margin: 16px 0;
+    border: 1px solid var(--ink);
+  }
+  pre .c-key { color: #F0CB7F; }
+  pre .c-str { color: #9AD9B6; }
+  pre .c-num { color: #F2A493; }
+  pre .c-com { color: #B8AE96; font-style: italic; }
+  pre .c-fn  { color: #A8B5D9; }
+  code.inline {
+    font-family: var(--font-mono); font-size: 0.88em;
+    background: var(--paper-3); color: var(--coral);
+    padding: 1px 6px; border-radius: 3px;
+  }
+
+  /* ============= SVG DIAGRAM STYLES ============= */
+  svg .box-fill { fill: var(--paper); }
+  svg .box-stroke { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+  svg text { font-family: var(--font-ja); }
+  svg .mono { font-family: var(--font-mono); }
+  svg .dim { fill: var(--ink-3); }
+  svg .wire { stroke: var(--ink-2); stroke-width: 1.6; fill: none; }
+  svg .wire-coral { stroke: var(--coral); stroke-width: 1.6; fill: none; }
+  svg .wire-indigo { stroke: var(--indigo); stroke-width: 1.6; fill: none; }
+  svg .arrow-head { fill: var(--ink-2); }
+
+  /* ============= CANON TIMELINE ============= */
+  .canon-wrap {
+    background: var(--paper-2);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px; margin: 24px 0;
+    position: relative;
+  }
+  .canon-controls {
+    display: flex; gap: 14px; align-items: center;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3);
+    margin-bottom: 16px;
+  }
+  .btn {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    background: var(--ink); color: var(--paper);
+    border: 1px solid var(--ink);
+    padding: 8px 16px; border-radius: 3px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--coral); border-color: var(--coral); }
+  .btn.secondary { background: transparent; color: var(--ink); }
+  .btn.secondary:hover { background: var(--ink); color: var(--paper); }
+  .canon-time {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--ink); margin-left: auto;
+    background: var(--paper); padding: 6px 12px; border: 1px solid var(--line); border-radius: 3px;
+    min-width: 200px; text-align: right;
+  }
+
+  .canon-grid {
+    position: relative;
+    font-family: var(--font-mono); font-size: 11px;
+  }
+  .canon-ruler {
+    display: grid;
+    grid-template-columns: 80px repeat(16, 1fr);
+    border-bottom: 1px solid var(--line-2);
+    margin-bottom: 6px;
+    color: var(--ink-3); font-size: 10px; letter-spacing: 0.06em;
+  }
+  .canon-ruler > div { padding: 4px 0 6px; text-align: center; }
+  .canon-ruler > div:first-child { text-align: left; padding-left: 4px; }
+  .canon-ruler > div.active { color: var(--coral); font-weight: 700; }
+
+  .canon-track {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    align-items: center; margin: 5px 0;
+  }
+  .canon-label {
+    font-family: var(--font-body); font-size: 12px; font-weight: 600;
+    padding-right: 12px; color: var(--ink);
+  }
+  .canon-label small {
+    display: block; font-weight: 400; color: var(--ink-3); font-size: 10px;
+  }
+  .canon-bar {
+    position: relative; height: 36px;
+    background:
+      repeating-linear-gradient(to right,
+        transparent 0, transparent calc(100%/16 - 1px),
+        var(--line) calc(100%/16 - 1px), var(--line) calc(100%/16));
+    border-radius: 3px;
+  }
+  .canon-note {
+    position: absolute; top: 3px; bottom: 3px;
+    background: var(--coral); color: white;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-ja); font-size: 9.5px; font-weight: 500;
+    letter-spacing: -0.04em;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 0 2px;
+  }
+  .canon-note.b { background: var(--indigo); }
+  .canon-note.c { background: var(--amber); }
+  .canon-note.r { background: var(--mint); font-family: var(--font-mono); font-size: 14px; }
+
+  .canon-playhead {
+    position: absolute; top: 0; bottom: 0; width: 2px;
+    background: var(--ink); z-index: 5;
+    box-shadow: 0 0 0 3px rgba(20,19,17,0.08);
+    pointer-events: none;
+    transition: left 0.05s linear;
+  }
+  .canon-playhead::before {
+    content: ''; position: absolute; top: -6px; left: -5px;
+    width: 12px; height: 12px; background: var(--ink);
+    border-radius: 50%;
+  }
+
+  .canon-playhead-host {
+    position: relative;
+    margin-left: 80px;
+    margin-top: 6px;
+    height: 0;
+  }
+
+  .canon-legend {
+    display: flex; flex-wrap: wrap; gap: 16px;
+    margin-top: 20px; font-size: 12px; font-family: var(--font-ja);
+  }
+  .canon-legend span {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--ink-2);
+  }
+  .canon-legend i {
+    display: inline-block; width: 14px; height: 14px; border-radius: 2px;
+  }
+  .canon-legend i.a { background: var(--coral); }
+  .canon-legend i.b { background: var(--indigo); }
+  .canon-legend i.c { background: var(--amber); }
+  .canon-legend i.r { background: var(--mint); }
+
+  /* ============= BYTE VIS ============= */
+  .byte-vis {
+    display: flex; gap: 2px; margin: 20px 0;
+    font-family: var(--font-mono);
+    flex-wrap: wrap;
+  }
+  .byte {
+    display: flex; flex-direction: column; align-items: stretch;
+    min-width: 100px; flex: 1;
+    border: 1px solid var(--line);
+  }
+  .byte-hex {
+    padding: 16px 8px; text-align: center; font-size: 20px; font-weight: 600;
+    background: var(--paper); color: var(--ink);
+    border-bottom: 1px solid var(--line);
+  }
+  .byte-label {
+    padding: 8px; text-align: center; font-size: 10px;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
+    background: var(--paper-2);
+  }
+  .byte-value {
+    padding: 6px 8px; text-align: center; font-size: 12px;
+    color: var(--ink); background: var(--paper);
+    border-top: 1px solid var(--line);
+  }
+  .byte.cmd .byte-hex { background: var(--coral); color: white; border-bottom-color: var(--coral); }
+  .byte.bar .byte-hex { background: var(--indigo); color: white; border-bottom-color: var(--indigo); }
+  .byte.bpm .byte-hex { background: var(--amber); color: white; border-bottom-color: var(--amber); }
+
+  /* ============= PLL DIAGRAM ============= */
+  .pll-viz {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px; margin: 20px 0;
+  }
+
+  /* ============= FLOW STEPS ============= */
+  .flow-steps {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px;
+    margin: 24px 0;
+  }
+  @media (max-width: 900px) { .flow-steps { grid-template-columns: repeat(2, 1fr); } }
+  .flow-step {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    padding: 18px 16px; position: relative;
+    font-size: 12.5px; line-height: 1.55;
+  }
+  .flow-step-num {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--coral); font-weight: 700;
+    letter-spacing: 0.1em; margin-bottom: 6px;
+  }
+  .flow-step b {
+    display: block; font-size: 14px; margin-bottom: 6px; color: var(--ink);
+    font-weight: 600;
+  }
+  .flow-step small { color: var(--ink-3); font-size: 11px; }
+  .flow-step::after {
+    content: '→'; position: absolute; right: -10px; top: 50%;
+    transform: translateY(-50%); font-size: 14px; color: var(--coral);
+    background: var(--paper); padding: 0 3px; z-index: 1;
+  }
+  .flow-step:last-child::after { display: none; }
+  @media (max-width: 900px) {
+    .flow-step::after { content: '↓'; right: 50%; top: auto; bottom: -14px; transform: translateX(50%); }
+  }
+
+  /* ============= BPM TIMELINE COMPARE ============= */
+  .bpm-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 820px) { .bpm-compare { grid-template-columns: 1fr; } }
+  .bpm-panel {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px;
+  }
+  .bpm-panel.bad { border-color: var(--coral); }
+  .bpm-panel.good { border-color: var(--mint); }
+  .bpm-panel-title {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .bpm-panel.bad .bpm-panel-title { color: var(--coral); }
+  .bpm-panel.good .bpm-panel-title { color: var(--mint); }
+
+  /* ============= SMALL CARDS ============= */
+  .cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px; margin: 24px 0;
+  }
+  .card {
+    background: var(--paper-2); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px;
+    position: relative; overflow: hidden;
+  }
+  .card-num {
+    position: absolute; top: 10px; right: 16px;
+    font-family: var(--font-serif); font-style: italic;
+    font-size: 42px; color: var(--paper-3); font-weight: 700;
+    line-height: 1; letter-spacing: -0.02em; z-index: 0;
+  }
+  .card-icon {
+    width: 36px; height: 36px; border-radius: 2px;
+    background: var(--ink); color: var(--paper);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 14px; font-weight: 600;
+    margin-bottom: 12px; position: relative; z-index: 1;
+  }
+  .card h5 {
+    margin: 0 0 8px; font-size: 15px; font-weight: 600;
+    position: relative; z-index: 1;
+  }
+  .card p { font-size: 13px; color: var(--ink-2); margin: 0; position: relative; z-index: 1; }
+
+  /* ============= SEQUENCE ============= */
+  .sequence-wrap {
+    overflow-x: auto;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px; margin: 20px 0;
+  }
+
+  /* ============= FOOTER ============= */
+  footer {
+    max-width: var(--maxw); margin: 40px auto 0; padding: 30px 28px 60px;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 20px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+    color: var(--ink-3); text-transform: uppercase;
+  }
+  footer em { font-style: italic; font-family: var(--font-serif); text-transform: none; letter-spacing: 0; }
+
+  /* ============= UTILS ============= */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 820px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 3px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .badge-coral { background: var(--coral); color: white; }
+  .badge-indigo { background: var(--indigo); color: white; }
+  .badge-amber { background: var(--amber); color: white; }
+  .badge-mint { background: var(--mint); color: white; }
+  .badge-outline {
+    background: transparent; border: 1px solid var(--line-2); color: var(--ink-2);
+  }
+
+  .tag-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 20px;
+  }
+
+  ul.clean { list-style: none; padding: 0; margin: 0; }
+  ul.clean li {
+    padding: 10px 0 10px 28px;
+    border-bottom: 1px dashed var(--line);
+    position: relative;
+    font-size: 14px;
+  }
+  ul.clean li::before {
+    content: '□'; position: absolute; left: 0; top: 10px;
+    color: var(--coral); font-family: var(--font-mono);
+  }
+  ul.clean li:last-child { border-bottom: none; }
+
+  /* blueprint decorative corner */
+  .corner-marks {
+    position: absolute; top: 14px; right: 14px;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; color: var(--ink-3);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================= -->
+<!-- TOPBAR                                                         -->
+<!-- ============================================================= -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      同期方針計画書
+      <small>SYNC / SPEC / v1</small>
+    </div>
+    <nav class="topnav">
+      <a href="#s2">構成</a>
+      <a href="#s3">輪唱</a>
+      <a href="#s4">同期</a>
+      <a href="#s5">プロトコル</a>
+      <a href="#s6">テンポ</a>
+      <a href="#s7">音声</a>
+      <a href="#s8">性能</a>
+      <a href="#s10">用語</a>
+    </nav>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- HERO                                                           -->
+<!-- ============================================================= -->
+<section class="hero">
+  <div class="hero-meta">
+    <div class="left"><span>●</span> DOCUMENT — DESIGN AGREEMENT</div>
+    <div>No. 001 &nbsp;/&nbsp; 2026-04</div>
+  </div>
+
+  <h1>Arduino <span class="accent">輪唱</span> System<br/>同期方針計画書</h1>
+  <p class="hero-subtitle">
+    複数のArduinoを用いた<em>輪唱自動演奏</em>システムの同期戦略・通信プロトコル・可変テンポ制御・音声合成分担を定める設計合意書。ハイブリッド方式(<em>小節頭マーカー配信 + PLL補正</em>)を採用する。
+  </p>
+
+  <div class="hero-grid">
+    <dl class="spec-list">
+      <div class="spec-row"><dt>曲目</dt><dd>きらきら星 <b>(12小節, 4/4拍子)</b></dd></div>
+      <div class="spec-row"><dt>編成</dt><dd>指揮者 × <b>1</b> ｜ 楽器 × <b>3</b> ｜ リズム × <b>1</b></dd></div>
+      <div class="spec-row"><dt>通信</dt><dd>有線 <b>I²C</b>（指揮者=マスター / 楽器=スレーブ）</dd></div>
+      <div class="spec-row"><dt>同期</dt><dd><b>ハイブリッド方式</b>（SYNC配信 + PLL位相補正）</dd></div>
+      <div class="spec-row"><dt>テンポ</dt><dd>センサ入力で <b>小節頭に</b> BPM切替</dd></div>
+      <div class="spec-row"><dt>合成</dt><dd>Arduino = イベント生成 / Processing = <b>倍音合成</b></dd></div>
+    </dl>
+
+    <div class="hero-viz">
+      <div class="hero-viz-title">System Overview</div>
+      <svg viewBox="0 0 460 520" width="100%" preserveAspectRatio="xMidYMid meet" aria-label="system overview">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#3F3A2E"/>
+          </marker>
+          <marker id="ah-coral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#D83B20"/>
+          </marker>
+          <marker id="ah-indigo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#1E2B66"/>
+          </marker>
+        </defs>
+
+        <!-- sensor -->
+        <rect x="20" y="20" width="90" height="38" rx="2" fill="#1E2B66"/>
+        <text x="65" y="44" text-anchor="middle" font-size="12" fill="#FFFFFF" font-weight="600">センサー</text>
+
+        <!-- conductor -->
+        <rect x="185" y="14" width="175" height="52" rx="2" fill="#141311"/>
+        <text x="272" y="36" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="600">指揮者 Arduino</text>
+        <text x="272" y="54" text-anchor="middle" fill="#FFFFFF" font-size="10" class="mono">I²C MASTER</text>
+
+        <!-- sensor->conductor -->
+        <path class="wire-indigo" d="M110,39 L185,39" marker-end="url(#ah-indigo)"/>
+
+        <!-- I2C bus -->
+        <line x1="35" y1="110" x2="430" y2="110" stroke="#D83B20" stroke-width="2.5"/>
+        <text x="230" y="102" text-anchor="middle" fill="#D83B20" class="mono" font-size="10" font-weight="700">I²C BUS</text>
+
+        <!-- conductor->bus -->
+        <line x1="272" y1="66" x2="272" y2="110" stroke="#D83B20" stroke-width="2"/>
+        <circle cx="272" cy="110" r="3" fill="#D83B20"/>
+
+        <!-- instruments row -->
+        <g>
+          <line x1="60" y1="110" x2="60" y2="140" stroke="#D83B20" stroke-width="1.6"/>
+          <circle cx="60" cy="110" r="3" fill="#D83B20"/>
+          <rect x="20" y="140" width="80" height="48" rx="2" fill="#D83B20"/>
+          <text x="60" y="160" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">楽器 A</text>
+          <text x="60" y="178" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">0x10</text>
+        </g>
+        <g>
+          <line x1="165" y1="110" x2="165" y2="140" stroke="#D83B20" stroke-width="1.6"/>
+          <circle cx="165" cy="110" r="3" fill="#D83B20"/>
+          <rect x="125" y="140" width="80" height="48" rx="2" fill="#1E2B66"/>
+          <text x="165" y="160" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">楽器 B</text>
+          <text x="165" y="178" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">0x11</text>
+        </g>
+        <g>
+          <line x1="270" y1="110" x2="270" y2="140" stroke="#D83B20" stroke-width="1.6"/>
+          <circle cx="270" cy="110" r="3" fill="#D83B20"/>
+          <rect x="230" y="140" width="80" height="48" rx="2" fill="#B97B10"/>
+          <text x="270" y="160" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">楽器 C</text>
+          <text x="270" y="178" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">0x12</text>
+        </g>
+        <g>
+          <line x1="375" y1="110" x2="375" y2="140" stroke="#D83B20" stroke-width="1.6"/>
+          <circle cx="375" cy="110" r="3" fill="#D83B20"/>
+          <rect x="335" y="140" width="80" height="48" rx="2" fill="#2A6B4C"/>
+          <text x="375" y="160" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">リズム</text>
+          <text x="375" y="178" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">0x13</text>
+        </g>
+
+        <!-- serial arrows -->
+        <path class="wire" d="M60,188 L60,230" stroke-dasharray="3 3" marker-end="url(#ah)"/>
+        <path class="wire" d="M165,188 L165,230" stroke-dasharray="3 3" marker-end="url(#ah)"/>
+        <path class="wire" d="M270,188 L270,230" stroke-dasharray="3 3" marker-end="url(#ah)"/>
+        <path class="wire" d="M375,188 L375,230" stroke-dasharray="3 3" marker-end="url(#ah)"/>
+        <text x="220" y="215" text-anchor="middle" class="mono" font-size="9" fill="#6B6454">Serial · NOTE_ON/OFF</text>
+
+        <!-- Processing instances (one per instrument) -->
+        <g>
+          <rect x="20" y="235" width="80" height="50" rx="2" fill="#141311"/>
+          <text x="60" y="254" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">Proc A</text>
+          <text x="60" y="272" text-anchor="middle" fill="#FFFFFF" font-size="9" class="mono">ADD SYN</text>
+        </g>
+        <g>
+          <rect x="125" y="235" width="80" height="50" rx="2" fill="#141311"/>
+          <text x="165" y="254" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">Proc B</text>
+          <text x="165" y="272" text-anchor="middle" fill="#FFFFFF" font-size="9" class="mono">ADD SYN</text>
+        </g>
+        <g>
+          <rect x="230" y="235" width="80" height="50" rx="2" fill="#141311"/>
+          <text x="270" y="254" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">Proc C</text>
+          <text x="270" y="272" text-anchor="middle" fill="#FFFFFF" font-size="9" class="mono">ADD SYN</text>
+        </g>
+        <g>
+          <rect x="335" y="235" width="80" height="50" rx="2" fill="#141311"/>
+          <text x="375" y="254" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="700">Proc R</text>
+          <text x="375" y="272" text-anchor="middle" fill="#FFFFFF" font-size="9" class="mono">RHYTHM</text>
+        </g>
+
+        <!-- audio out arrows -->
+        <path class="wire" d="M60,285 L60,325" marker-end="url(#ah)"/>
+        <path class="wire" d="M165,285 L165,325" marker-end="url(#ah)"/>
+        <path class="wire" d="M270,285 L270,325" marker-end="url(#ah)"/>
+        <path class="wire" d="M375,285 L375,325" marker-end="url(#ah)"/>
+
+        <!-- speakers per channel -->
+        <g>
+          <rect x="28" y="330" width="64" height="36" rx="2" fill="#3F3A2E"/>
+          <text x="60" y="354" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">🔊 A</text>
+        </g>
+        <g>
+          <rect x="133" y="330" width="64" height="36" rx="2" fill="#3F3A2E"/>
+          <text x="165" y="354" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">🔊 B</text>
+        </g>
+        <g>
+          <rect x="238" y="330" width="64" height="36" rx="2" fill="#3F3A2E"/>
+          <text x="270" y="354" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">🔊 C</text>
+        </g>
+        <g>
+          <rect x="343" y="330" width="64" height="36" rx="2" fill="#3F3A2E"/>
+          <text x="375" y="354" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">🔊 R</text>
+        </g>
+
+        <!-- layer labels -->
+        <g class="mono" font-size="8" fill="#6B6454" letter-spacing="0.1em">
+          <text x="440" y="165" text-anchor="end">MCU</text>
+          <text x="440" y="260" text-anchor="end">DSP</text>
+          <text x="440" y="350" text-anchor="end">OUT</text>
+        </g>
+
+        <!-- footer caption -->
+        <text x="230" y="400" text-anchor="middle" font-size="10" fill="#6B6454" class="mono">— 各楽器が独立した Processing + Speaker を持つ —</text>
+      </svg>
+      <div class="corner-marks">FIG. 0.1</div>
+    </div>
+  </div>
+</section>
+
+<main>
+
+<!-- ============================================================= -->
+<!-- SECTION 1 — OVERVIEW                                           -->
+<!-- ============================================================= -->
+<section id="s1">
+  <div class="section-head">
+    <div class="section-num">§ 01</div>
+    <h2 class="section-title">概要 — プロジェクトの位置付け</h2>
+    <div class="section-kicker">Objective · Scope · Constraints</div>
+  </div>
+
+  <p class="lead">
+    本書は、複数のArduinoを用いた輪唱自動演奏システムにおける、楽器間の同期方針を定めるものである。クリスタルドリフト・通信遅延・音楽的破綻といった現実的な制約のもとで、輪唱という演奏形式を破綻させずに可変テンポを実現するための基本方針を記録する。
+  </p>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-num">01</div>
+      <div class="card-icon">◎</div>
+      <h5>目的</h5>
+      <p>輪唱構造を保ちながら、センサー入力に応じた可変テンポ演奏を実現する。</p>
+    </div>
+    <div class="card">
+      <div class="card-num">02</div>
+      <div class="card-icon">⊡</div>
+      <h5>スコープ</h5>
+      <p>通信方式・同期方式・可変テンポ・音声合成の役割分担。楽譜データや筐体は対象外。</p>
+    </div>
+    <div class="card">
+      <div class="card-num">03</div>
+      <div class="card-icon">△</div>
+      <h5>制約</h5>
+      <p>Arduino UnoのSRAM 2KB・I²Cバッファ32B・millis()オーバーフロー。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 2 — SYSTEM CONFIG                                      -->
+<!-- ============================================================= -->
+<section id="s2">
+  <div class="section-head">
+    <div class="section-num">§ 02</div>
+    <h2 class="section-title">システム構成</h2>
+    <div class="section-kicker">Physical layout · Role assignment</div>
+  </div>
+
+  <h3>2.1 物理構成図</h3>
+  <p>
+    I²Cバスを用いて指揮者 Arduino（マスター）から各楽器スレーブへ小節マーカーを配信する。<b>各楽器は個別のProcessingインスタンスに接続</b>され、それぞれ自分の倍音合成とスピーカー出力を持つ。
+  </p>
+
+  <div class="panel" style="background:var(--paper); padding: 10px;">
+    <svg viewBox="0 0 1160 640" width="100%" preserveAspectRatio="xMidYMid meet" aria-label="physical layout">
+      <defs>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#3F3A2E"/>
+        </marker>
+        <marker id="ah2-coral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#D83B20"/>
+        </marker>
+        <marker id="ah2-indigo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1E2B66"/>
+        </marker>
+
+        <!-- blueprint grid -->
+        <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+          <path d="M24 0 H0 V24" fill="none" stroke="#E2D9BF" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+      <rect width="1160" height="640" fill="url(#grid)" opacity="0.6"/>
+
+      <!-- SENSOR -->
+      <g>
+        <rect x="40" y="60" width="140" height="54" rx="2" fill="#1E2B66"/>
+        <text x="110" y="82" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">センサー</text>
+        <text x="110" y="102" text-anchor="middle" class="mono" font-size="11" fill="#FFFFFF">SENSOR INPUT</text>
+      </g>
+
+      <!-- CONDUCTOR -->
+      <g>
+        <rect x="240" y="40" width="220" height="96" rx="3" fill="#141311"/>
+        <text x="350" y="70" text-anchor="middle" fill="#FFFFFF" font-size="18" font-weight="700">指揮者 Arduino</text>
+        <text x="350" y="92" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="11">I²C MASTER</text>
+        <text x="350" y="115" text-anchor="middle" fill="#FFFFFF" font-size="11">テンポ管理 · SYNC配信 · センサ入力</text>
+      </g>
+      <path class="wire-indigo" d="M180,87 L240,87" stroke-width="2" marker-end="url(#ah2-indigo)"/>
+
+      <!-- I2C BUS (horizontal red rail) -->
+      <line x1="120" y1="200" x2="1080" y2="200" stroke="#D83B20" stroke-width="3"/>
+      <text x="600" y="190" text-anchor="middle" fill="#D83B20" class="mono" font-size="12" font-weight="700">I²C BUS · SDA + SCL</text>
+      <!-- conductor to bus -->
+      <line x1="350" y1="136" x2="350" y2="200" stroke="#D83B20" stroke-width="2.5"/>
+      <circle cx="350" cy="200" r="4" fill="#D83B20"/>
+
+      <!-- address labels on bus -->
+      <g font-family="JetBrains Mono" font-size="10" fill="#6B6454">
+        <text x="160" y="222" text-anchor="middle">0x10</text>
+        <text x="400" y="222" text-anchor="middle">0x11</text>
+        <text x="640" y="222" text-anchor="middle">0x12</text>
+        <text x="880" y="222" text-anchor="middle">0x13</text>
+      </g>
+
+      <!-- INSTRUMENT A -->
+      <g>
+        <line x1="160" y1="200" x2="160" y2="240" stroke="#D83B20" stroke-width="2"/>
+        <circle cx="160" cy="200" r="4" fill="#D83B20"/>
+        <rect x="80" y="240" width="160" height="76" rx="2" fill="#D83B20"/>
+        <text x="160" y="265" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">楽器 A</text>
+        <text x="160" y="285" text-anchor="middle" font-size="11" fill="#FFFFFF">主旋律 · 輪唱先頭</text>
+        <text x="160" y="302" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">entry_offset=0</text>
+      </g>
+
+      <!-- INSTRUMENT B -->
+      <g>
+        <line x1="400" y1="200" x2="400" y2="240" stroke="#D83B20" stroke-width="2"/>
+        <circle cx="400" cy="200" r="4" fill="#D83B20"/>
+        <rect x="320" y="240" width="160" height="76" rx="2" fill="#1E2B66"/>
+        <text x="400" y="265" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">楽器 B</text>
+        <text x="400" y="285" text-anchor="middle" font-size="11" fill="#FFFFFF">主旋律 · 2小節遅れ</text>
+        <text x="400" y="302" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">entry_offset=2</text>
+      </g>
+
+      <!-- INSTRUMENT C -->
+      <g>
+        <line x1="640" y1="200" x2="640" y2="240" stroke="#D83B20" stroke-width="2"/>
+        <circle cx="640" cy="200" r="4" fill="#D83B20"/>
+        <rect x="560" y="240" width="160" height="76" rx="2" fill="#B97B10"/>
+        <text x="640" y="265" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">楽器 C</text>
+        <text x="640" y="285" text-anchor="middle" font-size="11" fill="#FFFFFF">主旋律 · 4小節遅れ</text>
+        <text x="640" y="302" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">entry_offset=4</text>
+      </g>
+
+      <!-- RHYTHM -->
+      <g>
+        <line x1="880" y1="200" x2="880" y2="240" stroke="#D83B20" stroke-width="2"/>
+        <circle cx="880" cy="200" r="4" fill="#D83B20"/>
+        <rect x="800" y="240" width="160" height="76" rx="2" fill="#2A6B4C"/>
+        <text x="880" y="265" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">リズム</text>
+        <text x="880" y="285" text-anchor="middle" font-size="11" fill="#FFFFFF">拍刻み · 非輪唱</text>
+        <text x="880" y="302" text-anchor="middle" class="mono" font-size="10" fill="#FFFFFF">常時演奏</text>
+      </g>
+
+      <!-- serial arrows down -->
+      <path class="wire" d="M160,316 L160,360" stroke-dasharray="4 4" marker-end="url(#ah2)"/>
+      <path class="wire" d="M400,316 L400,360" stroke-dasharray="4 4" marker-end="url(#ah2)"/>
+      <path class="wire" d="M640,316 L640,360" stroke-dasharray="4 4" marker-end="url(#ah2)"/>
+      <path class="wire" d="M880,316 L880,360" stroke-dasharray="4 4" marker-end="url(#ah2)"/>
+      <text x="250" y="340" class="mono" font-size="10" fill="#6B6454">Serial / USB ───  NOTE_ON / NOTE_OFF</text>
+
+      <!-- Processing A -->
+      <g>
+        <rect x="80" y="370" width="160" height="68" rx="3" fill="#141311"/>
+        <text x="160" y="395" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">Processing A</text>
+        <text x="160" y="415" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">ADDITIVE SYN · ADSR</text>
+        <text x="160" y="430" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">PORT 1</text>
+      </g>
+
+      <!-- Processing B -->
+      <g>
+        <rect x="320" y="370" width="160" height="68" rx="3" fill="#141311"/>
+        <text x="400" y="395" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">Processing B</text>
+        <text x="400" y="415" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">ADDITIVE SYN · ADSR</text>
+        <text x="400" y="430" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">PORT 2</text>
+      </g>
+
+      <!-- Processing C -->
+      <g>
+        <rect x="560" y="370" width="160" height="68" rx="3" fill="#141311"/>
+        <text x="640" y="395" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">Processing C</text>
+        <text x="640" y="415" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">ADDITIVE SYN · ADSR</text>
+        <text x="640" y="430" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">PORT 3</text>
+      </g>
+
+      <!-- Processing R -->
+      <g>
+        <rect x="800" y="370" width="160" height="68" rx="3" fill="#141311"/>
+        <text x="880" y="395" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">Processing R</text>
+        <text x="880" y="415" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">RHYTHM SYN</text>
+        <text x="880" y="430" text-anchor="middle" fill="#FFFFFF" class="mono" font-size="10">PORT 4</text>
+      </g>
+
+      <!-- audio out arrows -->
+      <path class="wire" d="M160,438 L160,480" marker-end="url(#ah2)"/>
+      <path class="wire" d="M400,438 L400,480" marker-end="url(#ah2)"/>
+      <path class="wire" d="M640,438 L640,480" marker-end="url(#ah2)"/>
+      <path class="wire" d="M880,438 L880,480" marker-end="url(#ah2)"/>
+
+      <!-- speakers -->
+      <g>
+        <rect x="100" y="490" width="120" height="48" rx="2" fill="#3F3A2E"/>
+        <text x="160" y="516" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">🔊 SPK A</text>
+        <text x="160" y="532" text-anchor="middle" font-size="10" fill="#FFFFFF" class="mono">AUDIO OUT</text>
+      </g>
+      <g>
+        <rect x="340" y="490" width="120" height="48" rx="2" fill="#3F3A2E"/>
+        <text x="400" y="516" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">🔊 SPK B</text>
+        <text x="400" y="532" text-anchor="middle" font-size="10" fill="#FFFFFF" class="mono">AUDIO OUT</text>
+      </g>
+      <g>
+        <rect x="580" y="490" width="120" height="48" rx="2" fill="#3F3A2E"/>
+        <text x="640" y="516" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">🔊 SPK C</text>
+        <text x="640" y="532" text-anchor="middle" font-size="10" fill="#FFFFFF" class="mono">AUDIO OUT</text>
+      </g>
+      <g>
+        <rect x="820" y="490" width="120" height="48" rx="2" fill="#3F3A2E"/>
+        <text x="880" y="516" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">🔊 SPK R</text>
+        <text x="880" y="532" text-anchor="middle" font-size="10" fill="#FFFFFF" class="mono">AUDIO OUT</text>
+      </g>
+
+      <!-- stage groupings (visual) -->
+      <g font-family="JetBrains Mono" font-size="10" fill="#6B6454" letter-spacing="0.1em">
+        <text x="24" y="175" transform="rotate(-90 24 175)">I²C LAYER</text>
+        <text x="24" y="280" transform="rotate(-90 24 280)">MCU LAYER</text>
+        <text x="24" y="405" transform="rotate(-90 24 405)">DSP LAYER</text>
+        <text x="24" y="515" transform="rotate(-90 24 515)">OUTPUT</text>
+      </g>
+
+      <!-- labels -->
+      <text x="490" y="178" fill="#D83B20" class="mono" font-size="10">SYNC markers (broadcast)</text>
+
+      <!-- legend -->
+      <g transform="translate(990,440)">
+        <rect width="150" height="108" fill="#FFFFFF" stroke="#C9BFA5" stroke-width="1"/>
+        <text x="10" y="20" class="mono" font-size="10" fill="#6B6454">LEGEND</text>
+        <line x1="10" y1="36" x2="40" y2="36" stroke="#D83B20" stroke-width="2.5"/>
+        <text x="48" y="40" font-size="11">I²C (SYNC)</text>
+        <line x1="10" y1="56" x2="40" y2="56" stroke="#3F3A2E" stroke-width="1.6" stroke-dasharray="3 3"/>
+        <text x="48" y="60" font-size="11">Serial (音符)</text>
+        <line x1="10" y1="76" x2="40" y2="76" stroke="#3F3A2E" stroke-width="1.6"/>
+        <text x="48" y="80" font-size="11">Audio out</text>
+        <line x1="10" y1="96" x2="40" y2="96" stroke="#1E2B66" stroke-width="2"/>
+        <text x="48" y="100" font-size="11">Analog input</text>
+      </g>
+    </svg>
+  </div>
+  <p style="font-size: 13px; color: var(--ink-3); margin-top: 12px;">
+    <b style="color:var(--ink-2);">Note.</b> I²Cバスは指揮者→全楽器への1方向ブロードキャスト。Serial/USBは各楽器→自分専用のProcessingインスタンスへの1対1接続。各Processingは担当楽器の倍音構造に特化した音色合成を行う。
+  </p>
+
+  <h3>2.2 役割分担</h3>
+  <table>
+    <thead>
+      <tr><th>装置</th><th>役割</th><th>出力</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><b>指揮者 Arduino</b> <span class="badge badge-coral">MASTER</span></td><td>全体のテンポ管理、センサー入力受付、SYNCマーカー配信</td><td>I²C信号</td></tr>
+      <tr><td><b>楽器 Arduino A/B/C</b> <span class="badge badge-indigo">SLAVE</span></td><td>主旋律パート(輪唱の各パート担当)、音符イベント生成</td><td>Serial (音符データ)</td></tr>
+      <tr><td><b>リズム Arduino</b> <span class="badge badge-mint">SLAVE</span></td><td>拍を刻むリズム楽器、輪唱には参加しない</td><td>Serial (音符データ)</td></tr>
+      <tr><td><b>Processing</b> <span class="badge badge-amber">HOST</span></td><td>音符イベントを受け取り、楽器の倍音構造に基づく音声合成</td><td>音声出力</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 3 — CANON STRUCTURE                                    -->
+<!-- ============================================================= -->
+<section id="s3">
+  <div class="section-head">
+    <div class="section-num">§ 03</div>
+    <h2 class="section-title">輪唱構造とは</h2>
+    <div class="section-kicker">Round · Canon · Time-shifted harmony</div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>3.1 輪唱の定義</h3>
+      <p><b>輪唱</b>とは、同じ旋律を複数のパートが時間差で歌い重ねる形式。英語では <em>"round"</em> または <em>"canon"</em>。</p>
+      <div class="callout indigo">
+        <b>ポイント</b> — 各楽器は<b>同じ旋律</b>を演奏している。<b>スタート時刻だけが異なる</b>。時間的なズレによって生まれるハーモニーが輪唱の本質である。
+      </div>
+    </div>
+    <div>
+      <h3>3.4 輪唱であるための条件</h3>
+      <p>楽器間の<b>"小節単位のずれ"が一定</b>であること。</p>
+      <pre><span class="c-com">// 常に成立すべき条件</span>
+ズレ(小節数) = (楽器C位置) − (楽器A位置)
+            = <span class="c-num">常に一定</span>  <span class="c-com">// 例: 4小節</span></pre>
+      <p style="font-size:13px;color:var(--ink-3);margin-top:10px;">
+        このズレが変動すると、輪唱構造は破壊され、最終的には全員がユニゾンになってしまう。<br/>
+        → <b style="color:var(--coral);">全楽器が常に同一BPMで進む必要がある</b>。
+      </p>
+    </div>
+  </div>
+
+  <h3>3.2 時間軸で見る輪唱</h3>
+  <p>きらきら星を3パート輪唱、2小節ずつずらした場合のタイムライン。再生ヘッドを動かすと、同じ時刻にそれぞれのパートが<em>別のフレーズ</em>を歌っていることが視覚的に分かる。</p>
+
+  <div class="canon-wrap">
+    <div class="canon-controls">
+      <button class="btn" id="canonPlay">▶ PLAY</button>
+      <button class="btn secondary" id="canonReset">⟲ RESET</button>
+      <span style="color:var(--ink-3);">SPEED</span>
+      <button class="btn secondary" data-speed="0.5">0.5×</button>
+      <button class="btn secondary" data-speed="1" style="background:var(--ink);color:var(--paper);">1×</button>
+      <button class="btn secondary" data-speed="2">2×</button>
+      <div class="canon-time" id="canonTime">global_bar = 0.00 &nbsp;·&nbsp; 00:00</div>
+    </div>
+
+    <div class="canon-grid">
+      <div class="canon-ruler" id="canonRuler">
+        <div>&nbsp;</div>
+        <div>0</div><div>1</div><div>2</div><div>3</div>
+        <div>4</div><div>5</div><div>6</div><div>7</div>
+        <div>8</div><div>9</div><div>10</div><div>11</div>
+        <div>12</div><div>13</div><div>14</div><div>15</div>
+      </div>
+
+      <div class="canon-track">
+        <div class="canon-label">楽器A<small>offset 0</small></div>
+        <div class="canon-bar" id="trackA"></div>
+      </div>
+      <div class="canon-track">
+        <div class="canon-label">楽器B<small>offset 2</small></div>
+        <div class="canon-bar" id="trackB"></div>
+      </div>
+      <div class="canon-track">
+        <div class="canon-label">楽器C<small>offset 4</small></div>
+        <div class="canon-bar" id="trackC"></div>
+      </div>
+      <div class="canon-track">
+        <div class="canon-label">リズム<small>常時</small></div>
+        <div class="canon-bar" id="trackR"></div>
+      </div>
+
+      <div class="canon-playhead-host">
+        <div class="canon-playhead" id="canonPH" style="left:0%;"></div>
+      </div>
+    </div>
+
+    <div class="canon-legend">
+      <span><i class="a"></i>楽器A - 先頭</span>
+      <span><i class="b"></i>楽器B - 2小節遅れ</span>
+      <span><i class="c"></i>楽器C - 4小節遅れ</span>
+      <span><i class="r"></i>リズム - 拍刻み</span>
+      <span style="margin-left:auto; color:var(--ink-3);">▌再生ヘッド（物理時刻）</span>
+    </div>
+  </div>
+
+  <h3>3.3 「小節」の2つの呼び方</h3>
+  <table>
+    <thead><tr><th>呼び方</th><th>意味</th><th>誰にとっての時間軸か</th></tr></thead>
+    <tbody>
+      <tr><td><code>global_bar</code><br/>グローバル小節</td><td>曲全体の先頭からの通算小節番号</td><td>指揮者の視点・物理時刻</td></tr>
+      <tr><td><code>my_local_bar</code><br/>ローカル小節</td><td>自分が演奏を開始してから何小節目か</td><td>各楽器個人の視点</td></tr>
+    </tbody>
+  </table>
+
+  <div class="panel" style="margin-top:24px;">
+    <h4>変換式</h4>
+    <pre style="margin-top:8px;"><span class="c-key">my_local_bar</span> = <span class="c-key">global_bar</span> − <span class="c-key">my_entry_offset</span></pre>
+
+    <div class="grid-3" style="margin-top:20px;">
+      <div style="background:var(--paper);border:1px solid var(--line);padding:14px;border-radius:3px;">
+        <div class="mono" style="font-size:11px;color:var(--ink-3);letter-spacing:0.1em;">CASE A · 演奏中</div>
+        <div style="font-family:var(--font-mono);font-size:13px;margin-top:6px;">
+          global_bar = <b style="color:var(--coral);">5</b><br/>
+          my_local_bar = 5 − 2 = <b style="color:var(--indigo);">3</b>
+        </div>
+        <small style="color:var(--ink-3);">→ 自分の3小節目を演奏中</small>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--line);padding:14px;border-radius:3px;">
+        <div class="mono" style="font-size:11px;color:var(--ink-3);letter-spacing:0.1em;">CASE B · エントリー</div>
+        <div style="font-family:var(--font-mono);font-size:13px;margin-top:6px;">
+          global_bar = <b style="color:var(--coral);">2</b><br/>
+          my_local_bar = 2 − 2 = <b style="color:var(--indigo);">0</b>
+        </div>
+        <small style="color:var(--ink-3);">→ ちょうど演奏開始</small>
+      </div>
+      <div style="background:var(--paper);border:1px solid var(--line);padding:14px;border-radius:3px;">
+        <div class="mono" style="font-size:11px;color:var(--ink-3);letter-spacing:0.1em;">CASE C · 待機中</div>
+        <div style="font-family:var(--font-mono);font-size:13px;margin-top:6px;">
+          global_bar = <b style="color:var(--coral);">1</b><br/>
+          my_local_bar = 1 − 2 = <b style="color:var(--indigo);">−1</b>
+        </div>
+        <small style="color:var(--ink-3);">→ まだ参加前</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 4 — HYBRID SYNC                                        -->
+<!-- ============================================================= -->
+<section id="s4">
+  <div class="section-head">
+    <div class="section-num">§ 04</div>
+    <h2 class="section-title">同期の基本アーキテクチャ<br/>ハイブリッド方式</h2>
+    <div class="section-kicker">SYNC markers · Phase-Locked Loop · Self-running timer</div>
+  </div>
+
+  <p class="lead">
+    指揮者が<b>小節の頭ごとに</b>SYNCマーカーを全楽器に配信する。楽器は小節の間を自前のタイマーで自走し、マーカー受信時に位相をじわっと補正する(PLL的動作)。
+  </p>
+
+  <h3>4.2 時間軸で見る動作</h3>
+
+  <div class="panel" style="background:var(--paper); padding:16px;">
+    <svg viewBox="0 0 1100 300" width="100%" preserveAspectRatio="xMidYMid meet" aria-label="hybrid sync timing">
+      <defs>
+        <marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#D83B20"/>
+        </marker>
+      </defs>
+
+      <!-- conductor markers -->
+      <text x="40" y="40" font-size="13" font-weight="700" fill="#D83B20">指揮者</text>
+      <line x1="80" y1="60" x2="1040" y2="60" stroke="#C9BFA5" stroke-width="1"/>
+      <g>
+        <!-- 5 markers -->
+        <g transform="translate(120,60)">
+          <line x1="0" y1="-18" x2="0" y2="18" stroke="#D83B20" stroke-width="2.5"/>
+          <circle r="6" fill="#D83B20"/>
+          <text x="0" y="-26" text-anchor="middle" class="mono" font-size="10" fill="#D83B20">Mark#0</text>
+          <text x="0" y="38" text-anchor="middle" class="mono" font-size="10" fill="#6B6454">t=0s</text>
+        </g>
+        <g transform="translate(300,60)">
+          <line x1="0" y1="-18" x2="0" y2="18" stroke="#D83B20" stroke-width="2.5"/>
+          <circle r="6" fill="#D83B20"/>
+          <text x="0" y="-26" text-anchor="middle" class="mono" font-size="10" fill="#D83B20">Mark#1</text>
+          <text x="0" y="38" text-anchor="middle" class="mono" font-size="10" fill="#6B6454">t=2s</text>
+        </g>
+        <g transform="translate(480,60)">
+          <line x1="0" y1="-18" x2="0" y2="18" stroke="#D83B20" stroke-width="2.5"/>
+          <circle r="6" fill="#D83B20"/>
+          <text x="0" y="-26" text-anchor="middle" class="mono" font-size="10" fill="#D83B20">Mark#2</text>
+          <text x="0" y="38" text-anchor="middle" class="mono" font-size="10" fill="#6B6454">t=4s</text>
+        </g>
+        <g transform="translate(660,60)">
+          <line x1="0" y1="-18" x2="0" y2="18" stroke="#D83B20" stroke-width="2.5"/>
+          <circle r="6" fill="#D83B20"/>
+          <text x="0" y="-26" text-anchor="middle" class="mono" font-size="10" fill="#D83B20">Mark#3</text>
+          <text x="0" y="38" text-anchor="middle" class="mono" font-size="10" fill="#6B6454">t=6s</text>
+        </g>
+        <g transform="translate(840,60)">
+          <line x1="0" y1="-18" x2="0" y2="18" stroke="#D83B20" stroke-width="2.5"/>
+          <circle r="6" fill="#D83B20"/>
+          <text x="0" y="-26" text-anchor="middle" class="mono" font-size="10" fill="#D83B20">Mark#4</text>
+          <text x="0" y="38" text-anchor="middle" class="mono" font-size="10" fill="#6B6454">t=8s</text>
+        </g>
+      </g>
+
+      <!-- instrument self-running -->
+      <text x="40" y="150" font-size="13" font-weight="700" fill="#1E2B66">楽器A</text>
+      <line x1="80" y1="170" x2="1040" y2="170" stroke="#C9BFA5" stroke-width="1"/>
+
+      <!-- self-running spans with label -->
+      <g font-size="10" class="mono" fill="#1E2B66" font-weight="700">
+        <rect x="120" y="156" width="180" height="28" fill="#1E2B66" opacity="0.12" rx="2"/>
+        <text x="210" y="174" text-anchor="middle">1小節自走 →</text>
+        <rect x="300" y="156" width="180" height="28" fill="#1E2B66" opacity="0.12" rx="2"/>
+        <text x="390" y="174" text-anchor="middle">1小節自走 →</text>
+        <rect x="480" y="156" width="180" height="28" fill="#1E2B66" opacity="0.12" rx="2"/>
+        <text x="570" y="174" text-anchor="middle">1小節自走 →</text>
+        <rect x="660" y="156" width="180" height="28" fill="#1E2B66" opacity="0.12" rx="2"/>
+        <text x="750" y="174" text-anchor="middle">1小節自走 →</text>
+      </g>
+
+      <!-- correction arrows -->
+      <g font-size="10" class="mono" fill="#D83B20">
+        <path d="M300,60 L300,156" stroke="#D83B20" stroke-width="1" stroke-dasharray="2 2"/>
+        <path d="M480,60 L480,156" stroke="#D83B20" stroke-width="1" stroke-dasharray="2 2"/>
+        <path d="M660,60 L660,156" stroke="#D83B20" stroke-width="1" stroke-dasharray="2 2"/>
+        <path d="M840,60 L840,156" stroke="#D83B20" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="300" y="210" text-anchor="middle">位相補正</text>
+        <text x="480" y="210" text-anchor="middle">位相補正</text>
+        <text x="660" y="210" text-anchor="middle">位相補正</text>
+        <text x="840" y="210" text-anchor="middle">位相補正</text>
+      </g>
+
+      <!-- summary annotations -->
+      <text x="80" y="260" font-size="12" fill="#3F3A2E">——  マーカー間は自前タイマーで走る</text>
+      <text x="80" y="282" font-size="12" fill="#3F3A2E">——  マーカー受信で次の小節長を微調整する</text>
+    </svg>
+  </div>
+
+  <h3>4.3 PLL的補正の動作</h3>
+  <p>楽器側は「次のマーカーはこの時刻に来るはず」という<b>予測時刻</b>を持っている。実際の受信時刻と予測時刻の差(誤差)を計算し、その誤差の一部を次の小節長に反映させる。</p>
+
+  <div class="pll-viz">
+    <svg viewBox="0 0 1040 220" width="100%" preserveAspectRatio="xMidYMid meet">
+      <!-- timeline -->
+      <line x1="60" y1="120" x2="980" y2="120" stroke="#3F3A2E" stroke-width="1.5"/>
+      <polygon points="980,120 970,115 970,125" fill="#3F3A2E"/>
+      <text x="990" y="124" font-size="11" class="mono" fill="#6B6454">t</text>
+
+      <!-- predicted (expected) -->
+      <g transform="translate(400,120)">
+        <line x1="0" y1="-60" x2="0" y2="20" stroke="#5A6BAE" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <polygon points="-6,-60 6,-60 0,-50" fill="#5A6BAE"/>
+        <text x="0" y="-70" text-anchor="middle" font-size="13" font-weight="700" fill="#1E2B66">予測時刻</text>
+        <text x="0" y="40" text-anchor="middle" class="mono" font-size="11" fill="#1E2B66">expected</text>
+      </g>
+
+      <!-- actual -->
+      <g transform="translate(570,120)">
+        <line x1="0" y1="-60" x2="0" y2="20" stroke="#D83B20" stroke-width="2"/>
+        <polygon points="-6,-60 6,-60 0,-50" fill="#D83B20"/>
+        <text x="0" y="-70" text-anchor="middle" font-size="13" font-weight="700" fill="#D83B20">実受信時刻</text>
+        <text x="0" y="40" text-anchor="middle" class="mono" font-size="11" fill="#D83B20">actual</text>
+      </g>
+
+      <!-- error brace -->
+      <path d="M400,80 L400,70 L570,70 L570,80" stroke="#B97B10" stroke-width="1.5" fill="none"/>
+      <rect x="460" y="58" width="50" height="22" fill="#FFFFFF" stroke="#B97B10" stroke-width="1"/>
+      <text x="485" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#B97B10">error</text>
+
+      <!-- formula -->
+      <g transform="translate(40,165)">
+        <rect width="960" height="44" fill="#141311" rx="3"/>
+        <text x="20" y="28" fill="#FFFFFF" class="mono" font-size="13" font-weight="500">error = 実受信 − 予測</text>
+        <text x="260" y="28" fill="#FFFFFF" class="mono" font-size="13">→</text>
+        <text x="290" y="28" fill="#FFFFFF" class="mono" font-size="13" font-weight="500">次の小節長 = 理論値 − (error × </text>
+        <text x="580" y="28" fill="#FFFFFF" class="mono" font-size="16" font-weight="700">0.3</text>
+        <text x="600" y="28" fill="#FFFFFF" class="mono" font-size="13" font-weight="500">)</text>
+        <text x="665" y="28" fill="#FFFFFF" class="mono" font-size="11" font-style="italic">← 30%だけ補正 (一次ローパス)</text>
+      </g>
+    </svg>
+  </div>
+
+  <h4>補正係数の効果</h4>
+  <table>
+    <thead><tr><th>係数</th><th>追従速度</th><th>音楽的影響</th><th>評価</th></tr></thead>
+    <tbody>
+      <tr><td><code>0.7</code></td><td>速い</td><td>カクつく可能性</td><td><span class="badge badge-outline">過補正</span></td></tr>
+      <tr><td><code>0.3</code></td><td>適度</td><td>滑らか且つ追従良</td><td><span class="badge badge-mint">推奨</span></td></tr>
+      <tr><td><code>0.2</code></td><td>遅い</td><td>滑らかだが追従遅</td><td><span class="badge badge-outline">保守的</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 なぜこの方式なのか</h3>
+  <table>
+    <thead><tr><th>課題</th><th>ハイブリッド方式での解決策</th></tr></thead>
+    <tbody>
+      <tr><td>通信量を抑えたい</td><td>小節ごとに<b>1回だけ</b>配信(1秒に0.5回程度)</td></tr>
+      <tr><td>クリスタルドリフトでズレる</td><td>毎小節の補正で吸収(最大でも1小節分以内に収まる)</td></tr>
+      <tr><td>Arduinoの処理負荷を抑えたい</td><td>受信ISRは軽量、メインループは音符スケジューリングに集中</td></tr>
+      <tr><td>急な同期ズレにも対応したい</td><td>誤差50ms以上は<b>強制スナップ</b></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 5 — MESSAGE PROTOCOL                                   -->
+<!-- ============================================================= -->
+<section id="s5">
+  <div class="section-head">
+    <div class="section-num">§ 05</div>
+    <h2 class="section-title">メッセージプロトコル</h2>
+    <div class="section-kicker">I²C commands · Byte-level specification · Boot sequence</div>
+  </div>
+
+  <h3>5.1 I²Cメッセージ一覧</h3>
+  <p>Wireライブラリのバッファ(32バイト)に収まる形式で設計。</p>
+
+  <table>
+    <thead>
+      <tr><th>CMD</th><th>名称</th><th>用途</th><th>ペイロード</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>0x01</code></td>
+        <td><b>SYNC</b> <span class="badge badge-coral">MAIN</span></td>
+        <td>小節頭マーカー</td>
+        <td>global_bar (2B) + BPM×10 (2B)</td>
+      </tr>
+      <tr>
+        <td><code>0x10</code></td>
+        <td><b>START</b></td>
+        <td>演奏開始</td>
+        <td>なし</td>
+      </tr>
+      <tr>
+        <td><code>0x11</code></td>
+        <td><b>STOP</b></td>
+        <td>演奏停止</td>
+        <td>なし</td>
+      </tr>
+      <tr>
+        <td><code>0x12</code></td>
+        <td><b>CONFIG</b></td>
+        <td>パート設定(起動時1回)</td>
+        <td>entry_offset (1B) + loop_length (1B) + part_id (1B)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 SYNCメッセージの例</h3>
+  <p>120 BPM、第8小節の頭を通知する場合のバイト列:</p>
+
+  <div class="byte-vis">
+    <div class="byte cmd">
+      <div class="byte-hex">0x01</div>
+      <div class="byte-label">CMD</div>
+      <div class="byte-value">SYNC</div>
+    </div>
+    <div class="byte bar">
+      <div class="byte-hex">0x00</div>
+      <div class="byte-label">bar HIGH</div>
+      <div class="byte-value">上位バイト</div>
+    </div>
+    <div class="byte bar">
+      <div class="byte-hex">0x08</div>
+      <div class="byte-label">bar LOW</div>
+      <div class="byte-value">= 8</div>
+    </div>
+    <div class="byte bpm">
+      <div class="byte-hex">0x04</div>
+      <div class="byte-label">bpm HIGH</div>
+      <div class="byte-value">上位バイト</div>
+    </div>
+    <div class="byte bpm">
+      <div class="byte-hex">0xB0</div>
+      <div class="byte-label">bpm LOW</div>
+      <div class="byte-value">= 1200 → 120.0 BPM</div>
+    </div>
+  </div>
+
+  <div class="callout amber">
+    <b>BPMを×10で送る理由</b> — 整数で小数第1位まで表現可能(<code class="inline">120.5 BPM</code> のような値も扱える)。
+  </div>
+
+  <h3>5.3 起動〜演奏開始までのシーケンス</h3>
+  <p>各楽器はSTART後、自分の<code class="inline">entry_offset</code>と一致する<code class="inline">global_bar</code>のSYNCを受信した瞬間から演奏を開始する。</p>
+
+  <div class="sequence-wrap">
+    <svg viewBox="0 0 1100 530" width="100%" preserveAspectRatio="xMidYMid meet" aria-label="boot sequence">
+      <defs>
+        <marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#D83B20"/>
+        </marker>
+        <marker id="ah5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#1E2B66"/>
+        </marker>
+      </defs>
+
+      <!-- lifelines -->
+      <g font-size="13" font-weight="700">
+        <rect x="40" y="20" width="120" height="36" rx="2" fill="#141311"/>
+        <text x="100" y="43" text-anchor="middle" fill="#FFFFFF">指揮者</text>
+
+        <rect x="240" y="20" width="120" height="36" rx="2" fill="#FFFFFF" stroke="#D83B20" stroke-width="1.5"/>
+        <text x="300" y="43" text-anchor="middle" fill="#D83B20">楽器A</text>
+
+        <rect x="440" y="20" width="120" height="36" rx="2" fill="#FFFFFF" stroke="#1E2B66" stroke-width="1.5"/>
+        <text x="500" y="43" text-anchor="middle" fill="#1E2B66">楽器B</text>
+
+        <rect x="640" y="20" width="120" height="36" rx="2" fill="#FFFFFF" stroke="#B97B10" stroke-width="1.5"/>
+        <text x="700" y="43" text-anchor="middle" fill="#B97B10">楽器C</text>
+
+        <rect x="840" y="20" width="120" height="36" rx="2" fill="#FFFFFF" stroke="#2A6B4C" stroke-width="1.5"/>
+        <text x="900" y="43" text-anchor="middle" fill="#2A6B4C">リズム</text>
+      </g>
+
+      <!-- lifeline lines -->
+      <line x1="100" y1="56" x2="100" y2="520" stroke="#C9BFA5" stroke-dasharray="3 3"/>
+      <line x1="300" y1="56" x2="300" y2="520" stroke="#C9BFA5" stroke-dasharray="3 3"/>
+      <line x1="500" y1="56" x2="500" y2="520" stroke="#C9BFA5" stroke-dasharray="3 3"/>
+      <line x1="700" y1="56" x2="700" y2="520" stroke="#C9BFA5" stroke-dasharray="3 3"/>
+      <line x1="900" y1="56" x2="900" y2="520" stroke="#C9BFA5" stroke-dasharray="3 3"/>
+
+      <!-- CONFIG messages -->
+      <g class="mono" font-size="11">
+        <line x1="100" y1="90" x2="300" y2="90" stroke="#1E2B66" stroke-width="1.5" marker-end="url(#ah5)"/>
+        <text x="200" y="82" text-anchor="middle" fill="#1E2B66">CONFIG(offset=0)</text>
+
+        <line x1="100" y1="118" x2="500" y2="118" stroke="#1E2B66" stroke-width="1.5" marker-end="url(#ah5)"/>
+        <text x="300" y="110" text-anchor="middle" fill="#1E2B66">CONFIG(offset=2)</text>
+
+        <line x1="100" y1="146" x2="700" y2="146" stroke="#1E2B66" stroke-width="1.5" marker-end="url(#ah5)"/>
+        <text x="400" y="138" text-anchor="middle" fill="#1E2B66">CONFIG(offset=4)</text>
+
+        <line x1="100" y1="174" x2="900" y2="174" stroke="#1E2B66" stroke-width="1.5" marker-end="url(#ah5)"/>
+        <text x="500" y="166" text-anchor="middle" fill="#1E2B66">CONFIG(offset=0)</text>
+      </g>
+
+      <!-- divider -->
+      <line x1="40" y1="196" x2="1040" y2="196" stroke="#B2A684" stroke-dasharray="6 3" stroke-width="0.8"/>
+      <text x="540" y="210" text-anchor="middle" font-size="11" class="mono" fill="#6B6454">— setup complete —</text>
+
+      <!-- START broadcast -->
+      <g class="mono" font-size="11" font-weight="700" fill="#D83B20">
+        <line x1="100" y1="236" x2="900" y2="236" stroke="#D83B20" stroke-width="2" marker-end="url(#ah4)"/>
+        <text x="500" y="228" text-anchor="middle">START (broadcast)</text>
+      </g>
+
+      <!-- SYNC bar=0 -->
+      <g class="mono" font-size="11">
+        <line x1="100" y1="280" x2="900" y2="280" stroke="#D83B20" stroke-width="1.5" marker-end="url(#ah4)"/>
+        <text x="500" y="272" text-anchor="middle" fill="#D83B20">SYNC (bar=0, bpm=120.0)</text>
+        <rect x="282" y="294" width="36" height="20" fill="#D83B20" rx="2"/>
+        <text x="300" y="308" text-anchor="middle" fill="white" font-size="10" font-weight="700">▶</text>
+        <text x="300" y="330" text-anchor="middle" fill="#6B6454" font-size="10">演奏開始</text>
+        <rect x="882" y="294" width="36" height="20" fill="#2A6B4C" rx="2"/>
+        <text x="900" y="308" text-anchor="middle" fill="white" font-size="10" font-weight="700">▶</text>
+        <text x="900" y="330" text-anchor="middle" fill="#6B6454" font-size="10">演奏開始</text>
+      </g>
+
+      <!-- SYNC bar=1 -->
+      <g class="mono" font-size="11">
+        <line x1="100" y1="354" x2="900" y2="354" stroke="#D83B20" stroke-width="1.5" marker-end="url(#ah4)"/>
+        <text x="500" y="346" text-anchor="middle" fill="#D83B20">SYNC (bar=1)</text>
+      </g>
+
+      <!-- SYNC bar=2 -->
+      <g class="mono" font-size="11">
+        <line x1="100" y1="398" x2="900" y2="398" stroke="#D83B20" stroke-width="1.5" marker-end="url(#ah4)"/>
+        <text x="500" y="390" text-anchor="middle" fill="#D83B20">SYNC (bar=2)</text>
+        <rect x="482" y="412" width="36" height="20" fill="#1E2B66" rx="2"/>
+        <text x="500" y="426" text-anchor="middle" fill="white" font-size="10" font-weight="700">▶</text>
+        <text x="500" y="448" text-anchor="middle" fill="#6B6454" font-size="10">演奏開始</text>
+      </g>
+
+      <!-- SYNC bar=4 -->
+      <g class="mono" font-size="11">
+        <line x1="100" y1="470" x2="900" y2="470" stroke="#D83B20" stroke-width="1.5" marker-end="url(#ah4)"/>
+        <text x="500" y="462" text-anchor="middle" fill="#D83B20">SYNC (bar=4)</text>
+        <rect x="682" y="484" width="36" height="20" fill="#B97B10" rx="2"/>
+        <text x="700" y="498" text-anchor="middle" fill="white" font-size="10" font-weight="700">▶</text>
+        <text x="700" y="520" text-anchor="middle" fill="#6B6454" font-size="10">演奏開始</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 6 — VARIABLE TEMPO                                     -->
+<!-- ============================================================= -->
+<section id="s6">
+  <div class="section-head">
+    <div class="section-num">§ 06</div>
+    <h2 class="section-title">可変テンポの仕組み</h2>
+    <div class="section-kicker">Sensor-driven BPM · Bar-aligned application · PLL follow</div>
+  </div>
+
+  <h3>6.1 基本方針</h3>
+  <div class="callout">
+    <b>全楽器が常に同一BPMで進む</b>（モデル1 : 物理時刻ベース）。<br/>
+    パート別に異なるBPMで進むモデル2は輪唱構造を破壊するため<b>不採用</b>。
+  </div>
+
+  <h3>6.2 センサー入力 → テンポ反映フロー</h3>
+  <div class="flow-steps">
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 01</div>
+      <b>センサー読取</b>
+      <small>移動平均 / チャタリング対策</small>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 02</div>
+      <b>目標BPM更新</b>
+      <small>デッドバンドで雑音除去 / <code class="inline">target_bpm_x10</code></small>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 03</div>
+      <b>滑らかな遷移</b>
+      <small>100ms毎に <code class="inline">current_bpm_x10</code> を target へ寄せる</small>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 04</div>
+      <b>小節頭で適用</b>
+      <small>境界まで待機 / <code class="inline">applied_bpm_x10</code> に確定</small>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 05</div>
+      <b>SYNC配信</b>
+      <small>全楽器へ同時に新BPMを送信</small>
+    </div>
+    <div class="flow-step">
+      <div class="flow-step-num">STEP 06</div>
+      <b>楽器が追従</b>
+      <small>PLL補正で位相を合わせる</small>
+    </div>
+  </div>
+
+  <h3>6.3 なぜ「小節頭でのみ適用」するのか</h3>
+  <p>小節の途中でBPMを変えると、楽器側の「次のマーカー予測時刻」が大きく狂い、拍がガクッとズレる。</p>
+
+  <div class="bpm-compare">
+    <div class="bpm-panel bad">
+      <div class="bpm-panel-title">✗ 悪い例 — 小節途中で変更</div>
+      <svg viewBox="0 0 500 160" width="100%" preserveAspectRatio="xMidYMid meet">
+        <line x1="20" y1="80" x2="480" y2="80" stroke="#6B6454" stroke-width="1.5"/>
+        <!-- bars -->
+        <line x1="20" y1="60" x2="20" y2="100" stroke="#141311" stroke-width="2"/>
+        <line x1="200" y1="60" x2="200" y2="100" stroke="#141311" stroke-width="2"/>
+        <!-- change point inside bar -->
+        <line x1="280" y1="50" x2="280" y2="110" stroke="#D83B20" stroke-width="2" stroke-dasharray="4 2"/>
+        <text x="280" y="44" text-anchor="middle" font-size="10" class="mono" fill="#D83B20">変更!</text>
+        <!-- next bar actual (off) -->
+        <line x1="418" y1="60" x2="418" y2="100" stroke="#D83B20" stroke-width="2.5"/>
+        <!-- expected next bar -->
+        <line x1="440" y1="60" x2="440" y2="100" stroke="#5A6BAE" stroke-width="2" stroke-dasharray="3 3"/>
+        <!-- error bracket -->
+        <path d="M418,115 L418,125 L440,125 L440,115" stroke="#D83B20" fill="none"/>
+        <text x="429" y="140" text-anchor="middle" font-size="10" fill="#D83B20" font-weight="700">誤差 290ms</text>
+        <!-- labels -->
+        <text x="20" y="120" font-size="10" class="mono" fill="#6B6454">t=0s</text>
+        <text x="200" y="120" font-size="10" class="mono" fill="#6B6454">t=2s</text>
+        <text x="418" y="60" font-size="10" class="mono" fill="#D83B20" font-weight="700">実 t=4.71</text>
+        <text x="456" y="60" font-size="10" class="mono" fill="#1E2B66" font-weight="700">予測 t=5</text>
+        <!-- BPM labels -->
+        <text x="110" y="75" text-anchor="middle" font-size="11" fill="#1E2B66" font-weight="700">120 BPM</text>
+        <text x="350" y="75" text-anchor="middle" font-size="11" fill="#D83B20" font-weight="700">140 BPM</text>
+      </svg>
+      <p style="font-size:12.5px;margin-top:8px;color:var(--ink-2);">大きくズレて拍が崩れる。</p>
+    </div>
+
+    <div class="bpm-panel good">
+      <div class="bpm-panel-title">✓ 良い例 — 小節頭で適用</div>
+      <svg viewBox="0 0 500 160" width="100%" preserveAspectRatio="xMidYMid meet">
+        <line x1="20" y1="80" x2="480" y2="80" stroke="#6B6454" stroke-width="1.5"/>
+        <!-- bars -->
+        <line x1="20" y1="60" x2="20" y2="100" stroke="#141311" stroke-width="2"/>
+        <line x1="180" y1="60" x2="180" y2="100" stroke="#141311" stroke-width="2"/>
+        <line x1="340" y1="60" x2="340" y2="100" stroke="#2A6B4C" stroke-width="2.5"/>
+        <text x="340" y="44" text-anchor="middle" font-size="10" class="mono" fill="#2A6B4C">境界で変更</text>
+        <line x1="476" y1="60" x2="476" y2="100" stroke="#2A6B4C" stroke-width="2"/>
+        <!-- BPM labels -->
+        <text x="100" y="75" text-anchor="middle" font-size="11" fill="#1E2B66" font-weight="700">120</text>
+        <text x="260" y="75" text-anchor="middle" font-size="11" fill="#1E2B66" font-weight="700">120</text>
+        <text x="408" y="75" text-anchor="middle" font-size="11" fill="#2A6B4C" font-weight="700">140 BPM</text>
+        <text x="20" y="120" font-size="10" class="mono" fill="#6B6454">t=0</text>
+        <text x="180" y="120" font-size="10" class="mono" fill="#6B6454">t=2</text>
+        <text x="340" y="120" font-size="10" class="mono" fill="#6B6454">t=4</text>
+        <text x="476" y="120" font-size="10" class="mono" fill="#6B6454">t=5.71</text>
+      </svg>
+      <p style="font-size:12.5px;margin-top:8px;color:var(--ink-2);">小節境界で切り替わるため拍は崩れない。</p>
+    </div>
+  </div>
+
+  <p style="margin-top:18px;font-size:13px;color:var(--ink-3);"><b>反映遅延</b>: 最大で現在の小節1つ分(120BPMなら最大2秒)。音楽的には十分許容範囲。</p>
+
+  <h3>6.4 BPM変化幅の制限</h3>
+  <p>一度にBPMが大きく変わると、楽器側のPLL補正が追いつかない。また、音楽的にも不自然。</p>
+
+  <div class="grid-2">
+    <div>
+      <ul class="clean">
+        <li><b>1小節あたりの変化幅は最大10 BPM程度に抑える</b></li>
+        <li>急激な変化が指示された場合は、<b>指揮者側で複数小節に分けて段階的に反映</b></li>
+      </ul>
+    </div>
+    <div>
+      <pre><span class="c-com">// 疑似コード — 小節境界でのBPM適用</span>
+<span class="c-key">void</span> <span class="c-fn">applyBPMAtBarBoundary</span>() {
+  <span class="c-key">int16_t</span> diff     = target_bpm_x10 − applied_bpm_x10;
+  <span class="c-key">int16_t</span> max_step = <span class="c-num">100</span>; <span class="c-com">// 1小節 = 10.0 BPM</span>
+
+  <span class="c-key">if</span> (<span class="c-fn">abs</span>(diff) &gt; max_step) {
+    applied_bpm_x10 += (diff &gt; <span class="c-num">0</span>) ? max_step : −max_step;
+  } <span class="c-key">else</span> {
+    applied_bpm_x10 = target_bpm_x10;
+  }
+}</pre>
+    </div>
+  </div>
+
+  <h3>6.5 輪唱として破綻しない保証</h3>
+  <table>
+    <thead><tr><th>#</th><th>条件</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>BPM変更は必ず小節頭で適用</td><td>小節の途中で変えると拍が乱れる</td></tr>
+      <tr><td>2</td><td>変化幅は1小節あたり10 BPM以下</td><td>楽器側のPLL補正が追従可能な範囲</td></tr>
+      <tr><td>3</td><td>全楽器がSYNCを受信できる通信信頼性</td><td>1楽器でも受信漏れすると輪唱崩壊</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--ink-3);">これらを守れば、センサー入力に応じたテンポ可変は<b style="color:var(--mint);">技術的にも音楽的にも破綻しない</b>。</p>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 7 — SYNTHESIS                                          -->
+<!-- ============================================================= -->
+<section id="s7">
+  <div class="section-head">
+    <div class="section-num">§ 07</div>
+    <h2 class="section-title">音声合成の役割分担</h2>
+    <div class="section-kicker">Arduino → Event / Processing → Synthesis</div>
+  </div>
+
+  <h3>7.1 <code class="inline">tone()</code>関数を使わない理由</h3>
+  <p>Arduino標準の<code class="inline">tone()</code>関数は<b>矩形波しか出力できず</b>、楽器らしい音色が再現できない。本システムでは、実際の楽器の<b>倍音構造を調査</b>し、それに基づいた音色合成を行う。</p>
+
+  <h3>7.2 役割分担</h3>
+
+  <div class="grid-2" style="gap:0;">
+    <div class="panel" style="border-radius: 4px 0 0 4px; border-right: none;">
+      <h4 style="color:var(--coral); margin-top:0;">▶ Arduino 側</h4>
+      <p style="font-weight:600; margin-bottom: 8px;">音符イベント生成</p>
+      <ul class="clean">
+        <li>担当パートの楽譜データ</li>
+        <li>SYNCに従った発音タイミング計算</li>
+        <li>音符(pitch)・強さ(velocity)・長さ(duration)の生成</li>
+      </ul>
+    </div>
+    <div class="panel panel-dark" style="border-radius: 0 4px 4px 0;">
+      <h4 style="margin-top:0;">▶ Processing 側</h4>
+      <p style="font-weight:600; margin-bottom: 8px; color:var(--paper);">音声合成</p>
+      <ul class="clean" style="color:var(--paper);">
+        <li style="border-color: rgba(255,255,255,0.15);">倍音構造による音色再現(クラリネット / フルート / オルガン等)</li>
+        <li style="border-color: rgba(255,255,255,0.15);">ADSRエンベロープ制御</li>
+        <li style="border-color: rgba(255,255,255,0.15);">エフェクト付与</li>
+        <li style="border-color: rgba(255,255,255,0.15);">最終出力</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>7.3 Arduino → Processing 音符イベント形式(案)</h3>
+  <pre><span class="c-key">NOTE_ON</span>  [pitch_midi] [velocity] [duration_ms_H] [duration_ms_L]
+<span class="c-key">NOTE_OFF</span> [pitch_midi]</pre>
+  <p style="font-size:13px;color:var(--ink-3);">詳細フォーマットは後続で設計。</p>
+
+  <h3>7.4 倍音構造調査の方針(今後の作業)</h3>
+  <ul class="clean">
+    <li>対象楽器:クラリネット、フルート、オルガン等(暫定)</li>
+    <li>実際の楽器音をスペクトル解析し、基音に対する倍音の強度比を取得</li>
+    <li>Processing側でこの倍音比に基づいた加算合成を実装</li>
+  </ul>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 8 — ARDUINO PERFORMANCE                                -->
+<!-- ============================================================= -->
+<section id="s8">
+  <div class="section-head">
+    <div class="section-num">§ 08</div>
+    <h2 class="section-title">Arduino性能上の注意点</h2>
+    <div class="section-kicker">I²C · Memory · Timing · Serial</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-num">8.1</div>
+      <div class="card-icon">I²C</div>
+      <h5>I²C通信</h5>
+      <p>Wireバッファは <b>32バイト</b>。スレーブの <code class="inline">onReceive</code> ISR内では <code class="inline">Serial.print</code> 等の重処理<b>禁止</b>。フラグ立ててメインループで処理する。</p>
+    </div>
+    <div class="card">
+      <div class="card-num">8.2</div>
+      <div class="card-icon">MEM</div>
+      <h5>メモリ管理</h5>
+      <p>Arduino Uno SRAMは <b>2KB</b> のみ。楽譜データは <code class="inline">PROGMEM</code> に配置し、<code class="inline">pgm_read_byte()</code> で読み出す。</p>
+    </div>
+    <div class="card">
+      <div class="card-num">8.3</div>
+      <div class="card-icon">⏱</div>
+      <h5>時刻管理</h5>
+      <p><code class="inline">millis()</code> は約49日、<code class="inline">micros()</code> は約70分でオーバーフロー。差分計算は必ず <b>符号付き整数</b> で。</p>
+    </div>
+    <div class="card">
+      <div class="card-num">8.4</div>
+      <div class="card-icon">SER</div>
+      <h5>シリアル通信</h5>
+      <p>ボーレート <b>115200bps以上</b> を推奨。バイナリ形式で音符イベントを送出。Processing側のバッファ溢れに注意。</p>
+    </div>
+  </div>
+
+  <h4>オーバーフロー安全な時刻比較</h4>
+  <pre><span class="c-com">// NG  ──  unsigned 比較はオーバーフロー時に誤動作</span>
+<span class="c-key">if</span> (now &gt;= next_time) { ... }
+
+<span class="c-com">// OK  ──  符号付きで引き算してから比較</span>
+<span class="c-key">if</span> ((<span class="c-key">long</span>)(now − next_time) &gt;= <span class="c-num">0</span>) { ... }</pre>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 9 — DEFERRED                                           -->
+<!-- ============================================================= -->
+<section id="s9">
+  <div class="section-head">
+    <div class="section-num">§ 09</div>
+    <h2 class="section-title">不採用・保留事項</h2>
+    <div class="section-kicker">Rejected proposals · With rationale</div>
+  </div>
+
+  <table>
+    <thead><tr><th style="width:32%;">項目</th><th>理由</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>5秒初期キャリブレーション</b> <span class="badge badge-outline">REJECTED</span></td>
+        <td>I²C有線環境では通信遅延が音楽的に無視可能なため不要。ハイブリッド方式の小節補正が代替機能を果たす。</td>
+      </tr>
+      <tr>
+        <td><b>楽譜位置ベースのパート別テンポ変更(モデル2)</b> <span class="badge badge-coral">HARMFUL</span></td>
+        <td>輪唱構造を破壊するため。</td>
+      </tr>
+      <tr>
+        <td><b>曲中の盛り上がり演出(タメ・加速等)</b> <span class="badge badge-outline">DEFERRED</span></td>
+        <td>今回は「可変テンポ対応」のみに集中。必要なら後から追加。</td>
+      </tr>
+      <tr>
+        <td><b><code>tone()</code>関数による音声出力</b> <span class="badge badge-outline">REJECTED</span></td>
+        <td>楽器らしい音色が再現できないため。Processing側で倍音合成を行う。</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================= -->
+<!-- SECTION 10 — FUTURE & APPENDIX                                 -->
+<!-- ============================================================= -->
+<section id="s10">
+  <div class="section-head">
+    <div class="section-num">§ 10</div>
+    <h2 class="section-title">今後の検討事項</h2>
+    <div class="section-kicker">Open questions · Hardware / Software / Synthesis</div>
+  </div>
+
+  <div class="grid-3">
+    <div class="panel">
+      <h4 style="margin-top:0; color:var(--indigo);">10.1 ハードウェア</h4>
+      <ul class="clean">
+        <li>センサーの具体選定(タクトスイッチ / ポテンショ / 距離センサ等)</li>
+        <li>BPM可変範囲の確定(例:60〜180 BPM)</li>
+        <li>各楽器Arduino ⇔ Processing 間の配線</li>
+        <li>LED等の視覚要素の扱い</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4 style="margin-top:0; color:var(--coral);">10.2 ソフトウェア</h4>
+      <ul class="clean">
+        <li>楽譜データのフォーマット確定</li>
+        <li>演奏開始 / 停止のトリガー方法</li>
+        <li>エントリーオフセットの最終値(2小節 or 4小節)</li>
+        <li>ループ再生するか、1回で終わるか</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h4 style="margin-top:0; color:var(--amber);">10.3 音声合成</h4>
+      <ul class="clean">
+        <li>対象楽器の倍音構造調査</li>
+        <li>加算合成のパラメータ設計</li>
+        <li>ADSRエンベロープの各パラメータ確定</li>
+        <li>エフェクト(リバーブ等)の適用範囲</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:60px;">付録:用語集</h3>
+  <table>
+    <thead><tr><th style="width:24%;">用語</th><th>意味</th></tr></thead>
+    <tbody>
+      <tr><td><b>輪唱</b></td><td>同じ旋律を複数パートが時間差で歌い重ねる形式</td></tr>
+      <tr><td><b>カノン (canon)</b></td><td>輪唱の英語表現。本書では「輪唱」と統一</td></tr>
+      <tr><td><b>小節 (bar / measure)</b></td><td>音楽の基本的な時間単位。4/4拍子なら4拍で1小節</td></tr>
+      <tr><td><b>BPM</b></td><td>Beats Per Minute、1分あたりの拍数(テンポの単位)</td></tr>
+      <tr><td><b><code>global_bar</code></b></td><td>曲全体の先頭からの通算小節番号(指揮者視点)</td></tr>
+      <tr><td><b><code>my_local_bar</code></b></td><td>各楽器が演奏開始してからの小節番号(楽器個人視点)</td></tr>
+      <tr><td><b><code>entry_offset</code></b></td><td>各楽器が演奏を開始する global_bar の値</td></tr>
+      <tr><td><b>PLL補正</b></td><td>Phase-Locked Loop。予測と実測の誤差を使って徐々に同期させる手法</td></tr>
+      <tr><td><b>SYNC</b></td><td>本システムで小節頭を通知するメッセージ名</td></tr>
+      <tr><td><b>ADSR</b></td><td>Attack / Decay / Sustain / Release。音の時間的な音量変化を表すエンベロープ</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  <div>Arduino 輪唱 System · 同期方針計画書 · v1</div>
+  <div><em>本書は設計合意事項を記録するものであり、実装の進展に応じて更新される。</em></div>
+</footer>
+
+<script>
+/* =======================================================
+   CANON TIMELINE — animated playhead
+   ======================================================= */
+(function(){
+  const TOTAL_BARS = 16;            // visualization span
+  const MELODY_BARS = 12;           // きらきら星 length
+  // 12小節 = 6フレーズ × 2小節
+  const PHRASES = [
+    { t: 'きらきらひかる おそらのほしよ', start: 0,  len: 2 },
+    { t: 'まばたきしては みんなをみてる', start: 2,  len: 2 },
+    { t: 'きらきらひかる おそらのほしよ', start: 4,  len: 2 },
+    { t: 'きらきらひかる おそらのほしよ', start: 6,  len: 2 },
+    { t: 'みんなのうたが とどくといいな', start: 8,  len: 2 },
+    { t: 'きらきらひかる おそらのほしよ', start: 10, len: 2 },
+  ];
+
+  const BAR_W = 100 / TOTAL_BARS;   // % width per bar
+
+  function renderTrack(id, offset, cls){
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    PHRASES.forEach((p, i) => {
+      const left = (p.start + offset) * BAR_W;
+      const width = p.len * BAR_W;
+      if (left + width > 100 + 0.1) return;
+      const div = document.createElement('div');
+      div.className = 'canon-note ' + cls;
+      div.style.left = left + '%';
+      div.style.width = (width - 0.3) + '%';
+      div.textContent = p.t;
+      el.appendChild(div);
+    });
+  }
+
+  function renderRhythm(id){
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    for (let b = 0; b < TOTAL_BARS; b++) {
+      const div = document.createElement('div');
+      div.className = 'canon-note r';
+      div.style.left = (b * BAR_W + 0.2) + '%';
+      div.style.width = (BAR_W - 0.5) + '%';
+      div.textContent = '♩ ♩ ♩ ♩';
+      el.appendChild(div);
+    }
+  }
+
+  renderTrack('trackA', 0, 'a');
+  renderTrack('trackB', 2, 'b');
+  renderTrack('trackC', 4, 'c');
+  renderRhythm('trackR');
+
+  // playhead
+  const ph = document.getElementById('canonPH');
+  const timeEl = document.getElementById('canonTime');
+  const ruler = document.getElementById('canonRuler');
+  const rulerCells = ruler.querySelectorAll('div');
+
+  let playing = false;
+  let speed = 1;
+  let barPos = 0; // in bars
+  let lastTs = 0;
+  const BPM = 120;
+  const SEC_PER_BAR = 60 / BPM * 4; // 2s at 120bpm 4/4
+
+  function update(){
+    const leftPct = (barPos / TOTAL_BARS) * 100;
+    ph.style.left = leftPct + '%';
+    const sec = barPos * SEC_PER_BAR;
+    const mm = Math.floor(sec/60).toString().padStart(2,'0');
+    const ss = Math.floor(sec%60).toString().padStart(2,'0');
+    timeEl.textContent = 'global_bar = ' + barPos.toFixed(2) + ' · ' + mm + ':' + ss;
+
+    // highlight ruler
+    rulerCells.forEach((c, i) => c.classList.remove('active'));
+    const barIdx = Math.floor(barPos);
+    if (barIdx >= 0 && barIdx < TOTAL_BARS) {
+      rulerCells[barIdx + 1] && rulerCells[barIdx + 1].classList.add('active');
+    }
+  }
+
+  function tick(ts){
+    if (!playing) return;
+    if (!lastTs) lastTs = ts;
+    const dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    barPos += (dt / SEC_PER_BAR) * speed;
+    if (barPos >= TOTAL_BARS) { barPos = 0; }
+    update();
+    requestAnimationFrame(tick);
+  }
+
+  document.getElementById('canonPlay').addEventListener('click', (e) => {
+    playing = !playing;
+    e.currentTarget.textContent = playing ? '❚❚ PAUSE' : '▶ PLAY';
+    if (playing) { lastTs = 0; requestAnimationFrame(tick); }
+  });
+  document.getElementById('canonReset').addEventListener('click', () => {
+    barPos = 0; update();
+  });
+  document.querySelectorAll('[data-speed]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      speed = parseFloat(e.currentTarget.dataset.speed);
+      document.querySelectorAll('[data-speed]').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--ink)';
+      });
+      e.currentTarget.style.background = 'var(--ink)';
+      e.currentTarget.style.color = 'var(--paper)';
+    });
+  });
+
+  update();
+})();
+</script>
+
+</body>
+</html>

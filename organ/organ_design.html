@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>オルガン音色 設計ワークリスト</title>
+<style>
+  :root{
+    --accent:#5a6e9e;--accent-light:#eceff6;--text:#232934;--muted:#6c7688;
+    --border:#d5dbe6;--code-bg:#f5f6fa;--warn:#fff9e6;--warn-border:#c2a23a;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;line-height:1.8;color:var(--text);max-width:960px;margin:0 auto;padding:32px 24px 80px;background:#fafbfd;}
+  h1{font-size:28px;border-bottom:3px solid var(--accent);padding-bottom:10px;margin-bottom:8px;}
+  .subtitle{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  h2{font-size:22px;background:var(--accent);color:#fff;padding:10px 16px;border-radius:6px;margin-top:40px;}
+  h3{font-size:16px;color:var(--accent);border-left:4px solid var(--accent);padding-left:10px;margin-top:24px;}
+  ul,ol{padding-left:24px;}
+  li{margin:4px 0;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-left:4px solid var(--accent);padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.55;border-radius:4px;}
+  code{font-family:"Menlo","Consolas",monospace;}
+  table{border-collapse:collapse;width:calc(100% - 26px);margin:10px 0 0 26px;background:#fff;}
+  th,td{border:1px solid var(--border);padding:8px 12px;text-align:left;font-size:13px;vertical-align:top;}
+  th{background:var(--accent-light);color:var(--text);font-weight:bold;}
+  td[contenteditable="true"]{cursor:text;background:#fff;transition:background .15s;}
+  td[contenteditable="true"]:focus{outline:none;background:var(--accent-light);box-shadow:inset 0 0 0 2px var(--accent);}
+  td[contenteditable="true"].is-empty::before{content:attr(data-placeholder);color:var(--muted);font-size:12px;font-style:italic;}
+  .alert{background:var(--warn);border-left:4px solid var(--warn-border);padding:14px 18px;margin:16px 0;border-radius:4px;font-size:14px;}
+  .alert ul{margin:8px 0 0;padding-left:20px;}
+  .alert li{margin:6px 0;}
+  details.brief{background:#fff;border:1px solid var(--border);border-radius:6px;padding:14px 20px;margin:16px 0;}
+  details.brief summary{cursor:pointer;font-weight:bold;color:var(--accent);user-select:none;}
+  details.brief[open] summary{margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .brief-content{font-size:14px;line-height:1.75;color:var(--text);}
+  .brief-content h4{margin:16px 0 6px;color:var(--accent);font-size:15px;}
+  .brief-content p{margin:8px 0;}
+  .brief-content ul{padding-left:22px;margin:4px 0 10px;}
+  .brief-to{font-weight:bold;color:var(--muted);}
+  .task{background:#fff;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;padding:12px 16px;margin:10px 0;}
+  .task-label{display:flex;align-items:flex-start;gap:8px;font-weight:bold;font-size:15px;cursor:pointer;line-height:1.5;}
+  .task-label input[type="checkbox"]{margin-top:5px;transform:scale(1.15);accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+  .task-hint{font-size:13px;color:var(--muted);margin:8px 0 6px 26px;line-height:1.6;}
+  .task-hint ol{padding-left:20px;margin:4px 0;}
+  .task-hint code{background:var(--code-bg);padding:1px 4px;border-radius:3px;font-size:12px;}
+  .answer-box{border:1px dashed var(--border);min-height:60px;background:#fff;padding:10px 14px;margin:6px 0 0 26px;font-size:14px;color:var(--text);border-radius:3px;line-height:1.7;cursor:text;transition:border-color .15s,box-shadow .15s;}
+  .answer-box:focus{outline:none;border-color:var(--accent);border-style:solid;box-shadow:0 0 0 2px var(--accent-light);}
+  .answer-box.is-empty::before{content:attr(data-placeholder);color:var(--muted);font-size:13px;pointer-events:none;}
+  .deliverable{background:var(--accent-light);border-left:4px solid var(--accent);}
+  .verify{background:#f0f7f0;border-left:4px solid #5c9c5e;}
+  .save-indicator{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;}
+  .save-indicator.show{opacity:.85;}
+  .btn-row{margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:13px;font-family:inherit;}
+  .btn.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .btn:hover{opacity:.9;}
+</style>
+</head>
+<body>
+
+<h1>オルガン音色 設計ワークリスト</h1>
+<div class="subtitle">担当：@B2_Kaito Naruke（オルガン） ／ Arduino → USBシリアル → Processing 構成</div>
+
+<details class="brief">
+  <summary>📩 元の依頼メッセージ（クリックで展開）</summary>
+  <div class="brief-content">
+    <p class="brief-to">@B2_Kaito Naruke</p>
+    <p>お疲れ様です。<br>Arduinoで音階データを保持し、PCと有線接続した上で、Processing側で受信データをもとに音を鳴らす仕組みを実装予定です。<br>今回、オルガン音色の詳細設計をお願いしたいです。</p>
+    <h4>前提構成</h4>
+    <ul>
+      <li>Arduino側で音階データを保持する</li>
+      <li>ArduinoからUSBシリアル通信でPCへ送信する</li>
+      <li>Processing側で受信したデータをもとに音を再生する</li>
+      <li>楽器ごとに音色を切り替えられる構成を想定する</li>
+    </ul>
+    <h4>設計してほしい内容</h4>
+    <p><strong>1. オルガン音色の表現方針</strong></p>
+    <ul><li>持続的で安定した音をどう表現するか</li><li>厚みのある響きをどう作るか</li><li>他の管楽器と違う鍵盤楽器らしさをどう出すか</li><li>電子的でも違和感の少ない音作りをどう行うか</li></ul>
+    <p><strong>2. 音源生成方式</strong></p>
+    <ul><li>ベース波形は何にするか</li><li>複数倍音をどう重ねるか</li><li>サステインをどう安定させるか</li><li>ADSRの設定方針</li><li>和音対応を見据えた設計にするか</li><li>音の厚みを出すための工夫</li></ul>
+    <p><strong>3. Arduinoから送るデータとの対応</strong></p>
+    <ul><li>楽器種別</li><li>音階情報</li><li>発音開始／停止</li><li>和音対応するなら複数ノートの扱い</li><li>音量制御の必要性</li></ul>
+    <p>また、オルガン実装において必要十分なデータ形式も考える。</p>
+    <p><strong>4. Processing側の再生処理</strong></p>
+    <ul><li>シリアル受信後の処理フロー</li><li>オルガン音選択時の分岐処理</li><li>ノートオン時の発音方法</li><li>ノートオフ時の処理</li><li>長く鳴らした時の安定性</li><li>和音再生を考慮するかどうか</li></ul>
+    <p><strong>5. オルガン特有の検討事項</strong></p>
+    <ul><li>音量を一定に保ちやすい構成</li><li>持続音として自然に聞こえる設計</li><li>倍音の重ね方で厚みを出す方法</li><li>シンプル実装でもオルガンらしさが出る方法</li><li>他2楽器より実装しやすい部分の整理</li></ul>
+    <p><strong>成果物</strong>：設計方針／使用波形・倍音・ADSR 案／通信データ／再生処理設計／パラメータ表・擬似コード</p>
+  </div>
+</details>
+
+<div class="alert">
+  <strong>このドキュメントの使い方</strong>
+  <ul>
+    <li><strong>記入欄はクリックして直接書き込めます</strong>。入力内容はブラウザに自動保存され、PC を再起動しても残ります（※ ブラウザのデータ削除・シークレットモード・別ブラウザで開いた場合は残りません）。記入が終わったら下の <strong>「JSONで書き出し」</strong> ボタンで保存して送ってください。</li>
+    <li><strong>オルガンは種類の幅が広い</strong>（パイプオルガン／ハモンドオルガン／電子オルガン）。どのオルガンを目指すかで設計が変わるので、まず方向性を決めることが重要です。</li>
+    <li><strong>AI（Claude / ChatGPT）活用のコツ</strong>：いきなり「オルガン音源を作って」と聞くより、先に Wikipedia や解説記事で事前知識を入れ、「ハモンドオルガンは○○という特徴があると聞いたが具体的には？」と聞く方が回答の精度が上がります。丸投げより、知った上で壁打ちするイメージ。</li>
+    <li><strong>情報源のヒント</strong>：Web で「organ spectrum」「hammond drawbar harmonics」「pipe organ waveform」と画像検索すると波形・スペクトル画像が出てきます。それを基準に設計すると方向性を外しにくいです。</li>
+    <li><strong>最終チェックは 2 段階</strong>：① 実際のオルガン音源と聴き比べて似ているか。② 自分の出力波形のスペクトルを Python / Audacity などで可視化し、調べた波形と形が近いか。両方クリアしたら完成。</li>
+  </ul>
+</div>
+
+<div class="btn-row">
+  <button class="btn" onclick="exportAnswers()">💾 記入内容をJSONで書き出し</button>
+  <button class="btn secondary" onclick="importAnswers()">📂 JSONから読み込み</button>
+  <button class="btn secondary" onclick="clearAll()">🗑 全削除</button>
+</div>
+
+<h2>前提構成</h2>
+<ul>
+  <li>Arduino 側で音階データを保持する</li>
+  <li>Arduino から USB シリアル通信で PC へ送信する</li>
+  <li>Processing 側で受信したデータをもとに音を再生する</li>
+  <li>楽器ごとに音色を切り替えられる構成を想定する</li>
+</ul>
+
+<h2>0. 音響基礎と担当楽器の特性調査（設計前のリサーチ）</h2>
+
+<div class="alert">
+  <strong>なぜ先にこれをやる？</strong>
+  <ul>
+    <li>音色設計は「物理的に何がどうなっているか」を理解していないと、パラメータをいじっても勘頼みになる。</li>
+    <li><strong>フーリエ変換 → 倍音構造 → 実測スペクトル</strong> の順で「目標の音が物理的にどんな構成か」をつかんでから設計に入ると、根拠を持って数値を決められる。</li>
+    <li>ここで得た知見は <strong>2 章（音源生成方式、特に 2-1 倍音構成）</strong> で直接使う。オルガンは <strong>加算合成</strong> 的な楽器なので、倍音ごとのレベル測定が設計そのものに直結する。</li>
+  </ul>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-1">R-1. フーリエ変換とは何かを自分の言葉でまとめる</label>
+  <p class="task-hint">「任意の波形は正弦波の和として表せる（フーリエ級数）」／「時間波形 ↔ 周波数スペクトルの変換」／「FFT は離散版の高速アルゴリズム」の 3 点を 3〜5 行で説明できるように。<br>調べ先：Wikipedia「フーリエ変換」「高速フーリエ変換」、YouTube の直感的解説動画（3Blue1Brown など）も有効。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-1" data-placeholder="自分の言葉でまとめる（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-2">R-2. 倍音構造の基礎と加算合成をまとめる</label>
+  <p class="task-hint">基音 (fundamental) と倍音 (harmonics / overtones)、整数倍の関係、偶数／奇数倍音が音色に与える影響。<br>さらに、フーリエの考え方は「複数の正弦波を足し合わせて任意の音を作れる」という<strong>加算合成（additive synthesis）</strong>の根拠でもあり、オルガン（特にハモンド）の設計思想そのもの、という点まで書く。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-2" data-placeholder="自分の言葉でまとめる（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-3">R-3. オルガンの発音原理（物理）を調べる</label>
+  <p class="task-hint">オルガンは種類で原理が違う。
+    <ul>
+      <li><strong>パイプオルガン</strong>：1 本のパイプが 1 つの倍音（厳密には基音中心のスペクトル）を担当。ストップ（パイプ群）を重ねて音色を作る＝物理的な加算合成。</li>
+      <li><strong>ハモンドオルガン</strong>：9 本のドローバーで 9 つの倍音（Sub, 1, 2, 3, 4, 5, 6, 8 など）のレベルを独立制御する加算方式。トーンホイールで正弦波に近い音を発生させる。</li>
+      <li><strong>電子オルガン</strong>：デジタル合成／サンプル再生。</li>
+    </ul>
+    どの方向を目指すかで倍音設計が変わる点まで書く。<br>調べ先：Wikipedia「パイプオルガン」「ハモンドオルガン」、ドローバーの解説記事。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-3" data-placeholder="発音原理と、それが倍音設計（加算合成）にどう繋がるか（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-4">R-4. オルガンの単音録音を入手する</label>
+  <p class="task-hint">目指す方向（パイプ／ハモンド／電子）に合わせて YouTube / freesound.org / サンプルライブラリ から単音を確保。理想的にはパイプオルガンとハモンドオルガンを<strong>両方</strong>入手して FFT を比べると違いが明瞭にわかる。使った音源名・URL を下に記録。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-4" data-placeholder="使用した音源（URL・オルガン種別・音名など）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-5">R-5. Audacity で FFT スペクトル解析する</label>
+  <p class="task-hint">
+    手順：
+    <ol>
+      <li>音源を Audacity で開く</li>
+      <li>安定している区間（鍵を押している中間の 0.5〜1 秒）を選択</li>
+      <li>メニュー <code>解析 → スペクトル</code>（サイズ 4096〜8192、関数 Hann）</li>
+      <li>ピーク位置にカーソルを合わせて周波数と dB を読む</li>
+      <li>各倍音のレベルを下の表に記入。<strong>どの倍音が強いか</strong> の分布がそのまま加算合成の設計になる。</li>
+    </ol>
+    ※ 2-1 にもっと詳しい倍音表がありますが、ここでは「一般的な倍音構成」、2-1 は「ドローバー方式との対応」という観点で使い分ける想定。
+  </p>
+  <div class="task-hint">
+    <strong>💡 コツと注意点（調べ方）</strong>
+    <ul>
+      <li><strong>MP3 より WAV / FLAC 推奨</strong>：MP3 は高次倍音が鈍ることがある。YouTube の音源は高圧縮なので、解析用にロスレス音源が手に入ればそちらを優先。</li>
+      <li><strong>エフェクト（リバーブ／EQ）付きは避ける</strong>：オルガンは教会録音でリバーブが強烈にかかっていることが多い。ドライ（残響なし）の録音を選ぶとスペクトルが素直に出る。</li>
+      <li><strong>dB は相対値</strong>：表示される dB は曲全体の最大振幅を 0 dB とした基準値。絶対値は気にせず、基音比（各倍音が基音より何 dB 低いか）で見れば OK。</li>
+      <li><strong>ピッチのズレ</strong>：演奏のチューニングが正確でないと ×2, ×3 の理論周波数に完全一致しない。ピーク付近の値で妥協してよい。</li>
+    </ul>
+    <strong>🔧 Audacity 以外の解析ツール（選択肢）</strong>
+    <ul>
+      <li><strong>Python (numpy + scipy.fft + matplotlib)</strong>：AI にスクリプトを書かせて <code>python fft.py sample.wav</code> で一発解析。表作成まで自動化できる。厳密な数値が欲しい場合に。</li>
+      <li><strong>Sonic Visualiser</strong>：Audacity より見やすいスペクトログラム表示ができる無料ツール。</li>
+      <li><strong>SPAN（無料 VST プラグイン）</strong>：DAW と併用するならこれ。</li>
+    </ul>
+    <em>※ 上記は Claude（AI）の知識に基づく情報です。Audacity のバージョンや OS によってメニュー文言・UI が違う可能性があるので、まず自分の環境で実際に動かして確認してください。</em>
+  </div>
+  <div class="answer-box" contenteditable="true" data-key="aR-5" data-placeholder="基音の周波数・オルガン種別・使用 FFT サイズ・気づいた特徴（自動保存）"></div>
+  <table>
+    <tr><th>倍音 (N)</th><th>理論周波数 (基音 × N)</th><th>実測レベル (dB)</th><th>基音比 (dB, 1倍音=0)</th></tr>
+    <tr><td>1 (基音)</td><td>×1</td><td contenteditable="true" data-key="tR-h1-abs" data-placeholder="例：-10 dB"></td><td>0</td></tr>
+    <tr><td>2</td><td>×2</td><td contenteditable="true" data-key="tR-h2-abs"></td><td contenteditable="true" data-key="tR-h2-rel"></td></tr>
+    <tr><td>3</td><td>×3</td><td contenteditable="true" data-key="tR-h3-abs"></td><td contenteditable="true" data-key="tR-h3-rel"></td></tr>
+    <tr><td>4</td><td>×4</td><td contenteditable="true" data-key="tR-h4-abs"></td><td contenteditable="true" data-key="tR-h4-rel"></td></tr>
+    <tr><td>5</td><td>×5</td><td contenteditable="true" data-key="tR-h5-abs"></td><td contenteditable="true" data-key="tR-h5-rel"></td></tr>
+    <tr><td>6</td><td>×6</td><td contenteditable="true" data-key="tR-h6-abs"></td><td contenteditable="true" data-key="tR-h6-rel"></td></tr>
+    <tr><td>7</td><td>×7</td><td contenteditable="true" data-key="tR-h7-abs"></td><td contenteditable="true" data-key="tR-h7-rel"></td></tr>
+    <tr><td>8</td><td>×8</td><td contenteditable="true" data-key="tR-h8-abs"></td><td contenteditable="true" data-key="tR-h8-rel"></td></tr>
+  </table>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-6">R-6. 測定結果から設計指針を抽出</label>
+  <p class="task-hint">表と耳で得た情報から、「加算合成するならどの倍音をどれくらい足すか」を 2〜3 行で仮決め。例：「1・2・3・4 倍音が均等に強く、5 以降は急減 → サイン波 4 本を 0 dB で重ねる構成から始める」など。これが 2 章・特に 2-1（倍音構成の表）の出発点になる。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-6" data-placeholder="測定から導いた設計方針（自動保存）"></div>
+</div>
+
+<h2>1. オルガン音色の表現方針</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-1">1-1. 目指すオルガンの種類を決める</label>
+  <p class="task-hint">パイプオルガン／ハモンドオルガン／電子オルガン のどれを目指すか。音色が違うので方向性をまず決める。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-2">1-2. 持続音の実現方法</label>
+  <p class="task-hint">オルガンは押している間ずっと一定音量で鳴る。これをシンセで実現するには ADSR のどこをどう設定する？</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-3">1-3. 厚みを出すための倍音設計方針</label>
+  <p class="task-hint">単音でも複数の倍音を重ねる（加算合成）が基本。何倍音をどれくらいの比率で重ねるか、調べた上で仮決定。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-4">1-4. 電子的になりすぎない工夫</label>
+  <p class="task-hint">デチューン／位相ランダム化／残響 などの選択肢から、今回採用するものを選ぶ。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>2. 音源生成方式</h2>
+
+<div class="alert">
+  <strong>前提：波形は Processing 側で合成する</strong><br>
+  Arduino 側は音階データの送信のみを担当し、波形合成は Processing で行う想定。オルガンは<strong>和音</strong>を扱うため、Arduino 側（<code>tone()</code> / PWM など）で複数倍音を加算しつつ和音も鳴らすのは現実的でない、というのがこの分担の根拠。3 人で同じ前提になっているかだけ最初に確認してください。
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-1">2-1. ベース波形の選択（加算合成の土台）</label>
+  <p class="task-hint">オルガン（特にハモンド）は「サイン波を複数重ねる＝加算合成」が基本。ベースをサイン波に置くか、既成波形（のこぎり／矩形）をローパスで整形するかなど、採用する方式を決める。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-2">2-2. 倍音構成（実測と加算比率）</label>
+  <p class="task-hint">何倍音までが目立つ？ 偶数／奇数で偏りはある？ ハモンドの「ドローバー」方式はどういう思想？<br>
+    調べ方：<br>
+    <ol>
+      <li>目標オルガンの単音録音（C4 など）を用意</li>
+      <li>Audacity で FFT スペクトル表示</li>
+      <li>各倍音のピーク高さを dB で読み取り下の表に記入</li>
+      <li>ハモンドのドローバー（9 本のスライダー）の倍率と、実測倍音を対応づけて考察</li>
+    </ol>
+  </p>
+  <div class="answer-box" contenteditable="true" data-key="a2-2" data-placeholder="考察・気づき（自動保存）"></div>
+  <table>
+    <tr><th>倍音</th><th>周波数 (基音 ×N)</th><th>実測レベル (dB)</th><th>ドローバーの倍率（参考）</th></tr>
+    <tr><td>Sub</td><td>×0.5</td><td contenteditable="true" data-key="t2-2-sub-db" data-placeholder="例：-12 dB"></td><td contenteditable="true" data-key="t2-2-sub-dr" data-placeholder=""></td></tr>
+    <tr><td>1</td><td>×1</td><td contenteditable="true" data-key="t2-2-1-db" data-placeholder=""></td><td contenteditable="true" data-key="t2-2-1-dr" data-placeholder=""></td></tr>
+    <tr><td>2</td><td>×2</td><td contenteditable="true" data-key="t2-2-2-db" data-placeholder=""></td><td contenteditable="true" data-key="t2-2-2-dr" data-placeholder=""></td></tr>
+    <tr><td>3</td><td>×3</td><td contenteditable="true" data-key="t2-2-3-db" data-placeholder=""></td><td contenteditable="true" data-key="t2-2-3-dr" data-placeholder=""></td></tr>
+    <tr><td>4</td><td>×4</td><td contenteditable="true" data-key="t2-2-4-db" data-placeholder=""></td><td contenteditable="true" data-key="t2-2-4-dr" data-placeholder=""></td></tr>
+    <tr><td>6</td><td>×6</td><td contenteditable="true" data-key="t2-2-6-db" data-placeholder=""></td><td contenteditable="true" data-key="t2-2-6-dr" data-placeholder=""></td></tr>
+    <tr><td>8</td><td>×8</td><td contenteditable="true" data-key="t2-2-8-db" data-placeholder=""></td><td contenteditable="true" data-key="t2-2-8-dr" data-placeholder=""></td></tr>
+  </table>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-3">2-3. ADSR 設定</label>
+  <p class="task-hint">オルガンは「押している間ずっと鳴る」＝ Sustain を高め、Decay をほぼ無しにするのが基本。Attack / Release は 0ms にするとクリックノイズが出るので、クリックを避けつつ鍵盤の即応性を保つ値を実際に鳴らして決める。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-3" data-placeholder="書き込み（自動保存）"></div>
+  <table>
+    <tr><th>項目</th><th>仮の値</th><th>耳で調整後の値</th><th>そう決めた理由</th></tr>
+    <tr><td>Attack</td><td contenteditable="true" data-key="t2-3-a-pre"></td><td contenteditable="true" data-key="t2-3-a-post"></td><td contenteditable="true" data-key="t2-3-a-why"></td></tr>
+    <tr><td>Decay</td><td contenteditable="true" data-key="t2-3-d-pre"></td><td contenteditable="true" data-key="t2-3-d-post"></td><td contenteditable="true" data-key="t2-3-d-why"></td></tr>
+    <tr><td>Sustain</td><td contenteditable="true" data-key="t2-3-s-pre"></td><td contenteditable="true" data-key="t2-3-s-post"></td><td contenteditable="true" data-key="t2-3-s-why"></td></tr>
+    <tr><td>Release</td><td contenteditable="true" data-key="t2-3-r-pre"></td><td contenteditable="true" data-key="t2-3-r-post"></td><td contenteditable="true" data-key="t2-3-r-why"></td></tr>
+  </table>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-4">2-4. 和音対応（ボイス管理）</label>
+  <p class="task-hint">Processing で複数ノートを同時に鳴らすには何を用意する？ 最大同時発音数は？ 発音を「ボイス」として管理する設計を考える。<br><strong>調べ先：</strong>「polyphonic synthesizer voice allocation」／ シンセのボイスアロケーション解説</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-5">2-5. クリップ（歪み）を防ぐ音量制御</label>
+  <p class="task-hint">複数ボイスを重ねると音量が合算されて歪む恐れがある。発音数に応じて音量を自動調整する方法は？</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-5" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>3. Arduinoから送るデータとの対応</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-1">3-1. 和音を送るデータ形式の比較</label>
+  <p class="task-hint">和音を表現するには、Arduino からどうデータを送る？（1メッセージ=1ノートを複数送る／1メッセージに複数ノート入れる、など選択肢を比較）</p>
+  <div class="answer-box" contenteditable="true" data-key="a3-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-2">3-2. ベロシティの扱い</label>
+  <p class="task-hint">オルガンはベロシティで音量が変わらない楽器とされるが、今回の実装ではベロシティを使う／使わない？ 使う場合は何に反映？</p>
+  <div class="answer-box" contenteditable="true" data-key="a3-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-3">3-3. データ項目の要否整理（3 人で統一）</label>
+  <p class="task-hint">フルート・クラリネット担当と揃えた共通フォーマットにする必要あり。</p>
+  <div class="answer-box" contenteditable="true" data-key="a3-3" data-placeholder="書き込み（自動保存）"></div>
+  <table>
+    <tr><th>項目</th><th>必要か（◯/△/×）</th><th>理由／使い道</th></tr>
+    <tr><td>楽器種別</td><td contenteditable="true" data-key="t3-instr-need"></td><td contenteditable="true" data-key="t3-instr-why"></td></tr>
+    <tr><td>イベント種別 (On/Off)</td><td contenteditable="true" data-key="t3-evt-need"></td><td contenteditable="true" data-key="t3-evt-why"></td></tr>
+    <tr><td>ノート番号</td><td contenteditable="true" data-key="t3-note-need"></td><td contenteditable="true" data-key="t3-note-why"></td></tr>
+    <tr><td>ベロシティ</td><td contenteditable="true" data-key="t3-vel-need"></td><td contenteditable="true" data-key="t3-vel-why"></td></tr>
+  </table>
+</div>
+
+<h2>4. Processing側の再生処理</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-1">4-1. シリアル受信後の処理フロー（和音対応前提）</label>
+  <p class="task-hint">受信 → パース → 発音 までの流れを、和音対応前提で書き下す。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-2">4-2. ノートオン／オフ時のボイス管理</label>
+  <p class="task-hint">Note On でどのボイスを使う？ 同じノートが再度 On されたときの挙動は？ Note Off で正しいボイスを止めるには、どんなデータ構造で管理する？（例：HashMap / 配列 など）</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-3">4-3. 長く鳴らした時の安定性</label>
+  <p class="task-hint">数秒〜数十秒ずっと鳴らし続けた場合にノイズ・音量変動・位相ずれなどの問題は出ないか？ 実機で試して確認。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-4">4-4. ノイズが出にくい再生方法</label>
+  <p class="task-hint">Attack/Release を 0ms にしない、再トリガ前に Release で閉じる、ボイス切り替え時にフェードする など、クリック回避策。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>5. オルガン特有の検討事項</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-1">5-1. 音量を一定に保ちやすい構成（持続音らしさ）</label>
+  <p class="task-hint">オルガンは押している間ずっと同じ音量で鳴るのが特徴。ADSR の設定（Sustain 高め／Decay 抑制）や、長時間発音でも音量が揺れない再生方法を整理する。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-2">5-2. 厚み・自然さを出す工夫（デチューン／位相ランダム化／残響 など）</label>
+  <p class="task-hint">加算合成したサイン波を単純に重ねると「電子っぽさ」が出やすい。デチューン（わずかな周波数ズレ）・位相ランダム化・残響などの候補から、採用するものを選ぶ。実験して判断。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-3">5-3. 他楽器より楽な部分／オルガンだけ難しい部分の整理</label>
+  <p class="task-hint">フルート・クラリネットより実装が楽な部分（例：息ノイズがいらない／ビブラート不要）と、<strong>オルガンだけが難しい</strong>部分（例：和音・ボイス管理・合算音量）を並べて整理する。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-4">5-4. シンプル実装でもオルガンらしさを出せる最小構成</label>
+  <p class="task-hint">時間がないときに何だけ残せば「オルガンっぽく」聞こえるか。例：サイン波 3 本（×1, ×2, ×3）＋ Sustain 最大 ＋ クリック回避用の短い Attack/Release、くらいから試す。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>成果物</h2>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-1">D1. オルガン音色設計方針（まとめ）</label>
+  <p class="task-hint">1〜2 章の結論を自分の言葉で整理。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-2">D2. 使用波形・倍音・ADSR の案（パラメータ表）</label>
+  <p class="task-hint">実装で使う具体値。2-1／2-2 の表が埋まっていれば、それを引用する形で OK。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-3">D3. ポリフォニー設計（最大ボイス数・管理データ構造）</label>
+  <p class="task-hint">2-3 の結論を具体的に。最大同時発音数、ボイス管理に使うデータ構造、クリップ防止方法。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-4">D4. 必要な通信データ項目（和音送信の扱い含む）</label>
+  <p class="task-hint">Arduino ↔ Processing の取り決め。3 人で統一したフォーマット。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-5">D5. Processing 側の再生処理設計（擬似コードまたは実コード）</label>
+  <p class="task-hint">発表で示せる形に。最低限「和音が鳴る」状態まで持っていく。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-5" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>検証（最終チェック）</h2>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-1">V1. 実際のオルガン音と聴き比べて「オルガンっぽく」聞こえるか</label>
+  <p class="task-hint">YouTube 等でオルガン単音・和音を再生し、自分の出力と比較。違和感が残るならどの要素が問題かをメモ。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-1" data-placeholder="聞き比べた所感・気づいた差分を書き込み"></div>
+</div>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-2">V2. 波形スペクトルを可視化し、調べた本物の波形と形が近いか確認</label>
+  <p class="task-hint">Processing 出力を WAV 保存 → Python（numpy + matplotlib）や Audacity でスペクトル表示 → Web で調べたオルガン波形スペクトル画像と比較。Python スクリプトは AI に書かせて OK。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-2" data-placeholder="比較結果（倍音分布のズレ、厚みの差 など）"></div>
+</div>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-3">V3. 和音を長時間鳴らして問題が出ないか</label>
+  <p class="task-hint">3 和音・4 和音を数十秒鳴らし続け、ノイズ・音量変動・位相のうなり・クリップ が出ないかチェック。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-3" data-placeholder="確認結果"></div>
+</div>
+
+<h2>参考：AI との付き合い方</h2>
+<p>AI（Claude / ChatGPT）は「何も知らない状態の質問」には平均的な答えしか返しません。次のステップで使うと精度が上がります。</p>
+<ol>
+  <li>Wikipedia・解説記事・Web 画像検索でオルガンの基礎知識（パイプオルガンとハモンドの違い、ドローバー、倍音構成）を 10 分だけ入れる</li>
+  <li>「ハモンドオルガンはドローバー方式で倍音を加算していると聞いたが、Processing 実装では何倍音まで重ねるのが妥当？」のように<strong>前提をこちらから提示して聞く</strong></li>
+  <li>コード依頼時は「processing.sound の SinOsc・Env を使い、ボイスは配列で管理」のように<strong>使う API と設計方針を指定</strong>すると、存在しないメソッドを捏造されにくい</li>
+</ol>
+
+<h2>付録：実装のたたき台（構造サンプル）</h2>
+<pre><code>// ※ 以下は構造サンプルです。
+// クラス名・メソッド名・引数は processing.sound 公式リファレンスで必ず確認。
+// 倍音レベル・ADSR・ボイス数は自分で測定・調整してください。
+
+import processing.serial.*;
+import processing.sound.*;
+import java.util.HashMap;
+
+Serial port;
+// OrganSynth / Voice 相当のクラスを設計してから宣言
+
+void setup() {
+  size(400, 200);
+  // port = new Serial(this, Serial.list()[?], ?);
+  // port.bufferUntil('\n');
+}
+
+void draw() { background(240); }
+
+void serialEvent(Serial p) {
+  // 1. 1行読み込み（readStringUntil('\n')）
+  // 2. パースして instrument / event / note / velocity
+  // 3. instrument が "O"（オルガン）なら自分の処理
+  // 4. Note On → 空きボイスを確保して発音
+  // 5. Note Off → 該当ノートのボイスを解放
+}
+
+// Voice クラスには、重ねるサイン波の本数・倍率・レベルを
+// 自分で実測した値で設定する。
+// ボイスは複数持てるよう配列 / プールで管理する。
+</code></pre>
+
+<div class="save-indicator" id="saveIndicator">保存しました</div>
+
+<script>
+(function(){
+  const keyPrefix = 'ws:' + document.title + ':';
+  const indicator = document.getElementById('saveIndicator');
+  let hideTimer;
+
+  function flashSaved() {
+    indicator.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => indicator.classList.remove('show'), 800);
+  }
+
+  function togglePlaceholder(el) {
+    const html = el.innerHTML.trim();
+    const isEmpty = html === '' || html === '<br>' || html === '<br/>';
+    el.classList.toggle('is-empty', isEmpty);
+  }
+
+  document.querySelectorAll('[contenteditable="true"][data-key]').forEach(el => {
+    const storageKey = keyPrefix + el.dataset.key;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) el.innerHTML = saved;
+    togglePlaceholder(el);
+    el.addEventListener('input', () => {
+      localStorage.setItem(storageKey, el.innerHTML);
+      togglePlaceholder(el);
+      flashSaved();
+    });
+    el.addEventListener('blur', () => togglePlaceholder(el));
+  });
+
+  document.querySelectorAll('input[type="checkbox"][data-key]').forEach(el => {
+    const storageKey = keyPrefix + el.dataset.key;
+    if (localStorage.getItem(storageKey) === '1') el.checked = true;
+    el.addEventListener('change', () => {
+      localStorage.setItem(storageKey, el.checked ? '1' : '0');
+      flashSaved();
+    });
+  });
+
+  window.exportAnswers = function() {
+    const data = {};
+    Object.keys(localStorage).filter(k => k.startsWith(keyPrefix)).forEach(k => {
+      data[k.slice(keyPrefix.length)] = localStorage.getItem(k);
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'organ_design_answers.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  window.importAnswers = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          Object.entries(data).forEach(([k,v]) => localStorage.setItem(keyPrefix + k, v));
+          location.reload();
+        } catch(err) { alert('読み込みに失敗しました: ' + err.message); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  window.clearAll = function() {
+    if (!confirm('全ての記入内容を削除します。よろしいですか？')) return;
+    Object.keys(localStorage).filter(k => k.startsWith(keyPrefix)).forEach(k => localStorage.removeItem(k));
+    location.reload();
+  };
+})();
+</script>
+
+</body>
+</html>

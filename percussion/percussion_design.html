@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>パーカッション音色 設計ワークリスト</title>
+<style>
+  :root{
+    --accent:#3a7a8c;--accent-light:#e6f0f2;--text:#1f2a30;--muted:#5e7682;
+    --border:#cfdce0;--code-bg:#f3f8f9;--warn:#fff6e6;--warn-border:#c69030;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;line-height:1.8;color:var(--text);max-width:960px;margin:0 auto;padding:32px 24px 80px;background:#fafcfc;}
+  h1{font-size:28px;border-bottom:3px solid var(--accent);padding-bottom:10px;margin-bottom:8px;}
+  .subtitle{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  h2{font-size:22px;background:var(--accent);color:#fff;padding:10px 16px;border-radius:6px;margin-top:40px;}
+  h3{font-size:16px;color:var(--accent);border-left:4px solid var(--accent);padding-left:10px;margin-top:24px;}
+  ul,ol{padding-left:24px;}
+  li{margin:4px 0;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-left:4px solid var(--accent);padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.55;border-radius:4px;}
+  code{font-family:"Menlo","Consolas",monospace;}
+  table{border-collapse:collapse;width:calc(100% - 26px);margin:10px 0 0 26px;background:#fff;}
+  th,td{border:1px solid var(--border);padding:8px 12px;text-align:left;font-size:13px;vertical-align:top;}
+  th{background:var(--accent-light);color:var(--text);font-weight:bold;}
+  td[contenteditable="true"]{cursor:text;background:#fff;transition:background .15s;}
+  td[contenteditable="true"]:focus{outline:none;background:var(--accent-light);box-shadow:inset 0 0 0 2px var(--accent);}
+  td[contenteditable="true"].is-empty::before{content:attr(data-placeholder);color:var(--muted);font-size:12px;font-style:italic;}
+  .task-hint ol{padding-left:20px;margin:4px 0;}
+  .task-hint code{background:var(--code-bg);padding:1px 4px;border-radius:3px;font-size:12px;}
+  .alert{background:var(--warn);border-left:4px solid var(--warn-border);padding:14px 18px;margin:16px 0;border-radius:4px;font-size:14px;}
+  .alert ul{margin:8px 0 0;padding-left:20px;}
+  .alert li{margin:6px 0;}
+  details.brief{background:#fff;border:1px solid var(--border);border-radius:6px;padding:14px 20px;margin:16px 0;}
+  details.brief summary{cursor:pointer;font-weight:bold;color:var(--accent);user-select:none;}
+  details.brief[open] summary{margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .brief-content{font-size:14px;line-height:1.75;color:var(--text);}
+  .brief-content h4{margin:16px 0 6px;color:var(--accent);font-size:15px;}
+  .brief-content p{margin:8px 0;}
+  .brief-content ul{padding-left:22px;margin:4px 0 10px;}
+  .brief-to{font-weight:bold;color:var(--muted);}
+  .task{background:#fff;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;padding:12px 16px;margin:10px 0;}
+  .task-label{display:flex;align-items:flex-start;gap:8px;font-weight:bold;font-size:15px;cursor:pointer;line-height:1.5;}
+  .task-label input[type="checkbox"]{margin-top:5px;transform:scale(1.15);accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+  .task-hint{font-size:13px;color:var(--muted);margin:8px 0 6px 26px;line-height:1.6;}
+  .answer-box{border:1px dashed var(--border);min-height:60px;background:#fff;padding:10px 14px;margin:6px 0 0 26px;font-size:14px;color:var(--text);border-radius:3px;line-height:1.7;cursor:text;transition:border-color .15s,box-shadow .15s;}
+  .answer-box:focus{outline:none;border-color:var(--accent);border-style:solid;box-shadow:0 0 0 2px var(--accent-light);}
+  .answer-box.is-empty::before{content:attr(data-placeholder);color:var(--muted);font-size:13px;pointer-events:none;}
+  .deliverable{background:var(--accent-light);border-left:4px solid var(--accent);}
+  .verify{background:#f0f7f0;border-left:4px solid #5c9c5e;}
+  .save-indicator{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;}
+  .save-indicator.show{opacity:.85;}
+  .btn-row{margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:13px;font-family:inherit;}
+  .btn.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .btn:hover{opacity:.9;}
+</style>
+</head>
+<body>
+
+<h1>パーカッション音色 設計ワークリスト</h1>
+<div class="subtitle">担当：（リズム Arduino 担当者を記入） ／ Arduino → USBシリアル → Processing 構成</div>
+
+<details class="brief">
+  <summary>📩 元の依頼メッセージ（クリックで展開）</summary>
+  <div class="brief-content">
+    <p class="brief-to">@リズム Arduino 担当者</p>
+    <p>お疲れ様です。<br>Arduinoで音階データ／リズムパターンを保持し、PCと有線接続した上で、Processing側で受信データをもとに音を鳴らす仕組みを実装予定です。<br>今回、パーカッション音色の詳細設計をお願いしたいです。</p>
+    <h4>前提構成</h4>
+    <ul>
+      <li>Arduino 側でリズムパターンを保持する（指揮者 Arduino からの SYNC に同期して再生）</li>
+      <li>Arduino から USB シリアル通信で PC へ送信する</li>
+      <li>Processing 側で受信したデータをもとに音を再生する</li>
+      <li>楽器ごとに音色を切り替えられる構成を想定する</li>
+      <li>パーカッションは <strong>輪唱には参加せず、全小節を通じて拍を刻むパート</strong> として動作する</li>
+    </ul>
+    <h4>設計してほしい内容</h4>
+    <p><strong>1. パーカッション音色の表現方針</strong></p>
+    <ul><li>打楽器らしい鋭いトランジェント（立ち上がり）をどう表現するか</li><li>胴鳴り・空気感をどう作るか</li><li>ピッチのある／ない音の使い分け</li><li>複数ドラム間で音色キャラを差別化する方法</li></ul>
+    <p><strong>2. 音源生成方式</strong></p>
+    <ul><li>ノイズベースか、サイン波 + ノイズの加算か、FM か</li><li>ノイズの帯域設計（ローノイズ／ホワイト／バンドパス）</li><li>ピッチ成分のスイープ設計（キックは周波数が落ちる）</li><li>フィルタ処理の要否</li><li>AD（または ADSR）エンベロープの設定方針</li></ul>
+    <p><strong>3. Arduinoから送るデータとの対応</strong></p>
+    <ul><li>楽器種別（パーカッションであること）</li><li>ドラム種別（キック／スネア／ハイハットなど）</li><li>発音タイミング</li><li>強弱（ベロシティ）の必要性</li></ul>
+    <p>パーカッション実装において必要十分なデータ形式も考える。</p>
+    <p><strong>4. Processing側の再生処理</strong></p>
+    <ul><li>シリアル受信後の処理フロー</li><li>パーカッション音選択時の分岐処理</li><li>ヒット（発音）時の挙動</li><li>連打時のクリック・歪み対策</li><li>同時発音（キック＋ハイハットの重ね打ち）への対応</li></ul>
+    <p><strong>5. パーカッション特有の検討事項</strong></p>
+    <ul><li>非調和（inharmonic）成分をどう扱うか</li><li>ピッチを持たない音と持つ音の合成手法の違い</li><li>シンプル実装でもドラムらしさを出す最小構成</li><li>輪唱に巻き込まれずに拍を刻み続けるためのデータ設計</li></ul>
+    <p><strong>成果物</strong>：設計方針／波形・ノイズ・フィルタ・AD/ADSR案／通信データ／再生処理設計／パラメータ表・擬似コード</p>
+  </div>
+</details>
+
+<div class="alert">
+  <strong>このドキュメントの使い方</strong>
+  <ul>
+    <li><strong>記入欄はクリックして直接書き込めます</strong>。入力内容はブラウザに自動保存され、PC を再起動しても残ります（※ ブラウザのデータ削除・シークレットモード・別ブラウザで開いた場合は残りません）。</li>
+    <li><strong>パーカッションは旋律楽器とアプローチが違う</strong>：倍音（整数倍）よりも<strong>非調和成分（モード周波数）</strong>と<strong>急速な減衰</strong>が音色の決め手。表は「倍音 N」ではなく「主要モード」で見ること。</li>
+    <li><strong>AI（Claude / ChatGPT）活用のコツ</strong>：いきなり「ドラム音源を作って」と聞くより、先に Wikipedia や解説記事で事前知識を入れ、「キックドラムは○○Hz から急降下するピッチ成分があると聞いたが具体的には？」と聞く方が回答の精度が上がります。</li>
+    <li><strong>情報源のヒント</strong>：Web で「kick drum spectrum」「snare drum spectrogram」「TR-808 schematic」「modal synthesis drum」と検索すると、波形・スペクトログラムや合成方法の図がよく出てきます。</li>
+    <li><strong>最終チェックは 2 段階</strong>：① 実際のドラム音源と聴き比べて似ているか。② 自分の出力波形のスペクトログラムを Python / Audacity などで可視化し、調べた波形と形が近いか。両方クリアしたら完成。</li>
+  </ul>
+</div>
+
+<div class="btn-row">
+  <button class="btn" onclick="exportAnswers()">💾 記入内容をJSONで書き出し</button>
+  <button class="btn secondary" onclick="importAnswers()">📂 JSONから読み込み</button>
+  <button class="btn secondary" onclick="clearAll()">🗑 全削除</button>
+</div>
+
+<h2>前提構成</h2>
+<ul>
+  <li>Arduino 側でリズムパターンを保持する（指揮者 Arduino の SYNC に同期して各拍でヒットイベントを発火）</li>
+  <li>Arduino から USB シリアル通信で PC へ送信する</li>
+  <li>Processing 側で受信したデータをもとに音を再生する</li>
+  <li>楽器ごとに音色を切り替えられる構成を想定する</li>
+  <li>パーカッションは輪唱には参加せず、全 12 小節を通して拍を刻む</li>
+</ul>
+
+<h2>0. 音響基礎と担当楽器の特性調査（設計前のリサーチ）</h2>
+
+<div class="alert">
+  <strong>なぜ先にこれをやる？</strong>
+  <ul>
+    <li>音色設計は「物理的に何がどうなっているか」を理解していないと、パラメータをいじっても勘頼みになる。</li>
+    <li><strong>フーリエ変換 → 非調和モード構造 → 実測スペクトログラム</strong> の順で「目標の音が物理的にどんな構成か」をつかんでから設計に入ると、根拠を持って数値を決められる。</li>
+    <li>パーカッションは旋律楽器と違って<strong>音が一瞬で終わる</strong>。だから普通の FFT（時間平均）だけでなく、<strong>スペクトログラム（時間 × 周波数）</strong> を見ることが特に重要。</li>
+    <li>ここで得た知見は <strong>2 章（音源生成方式）・5 章（パーカッション特有の検討）</strong> で直接使う。</li>
+  </ul>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-1">R-1. フーリエ変換とは何かを自分の言葉でまとめる</label>
+  <p class="task-hint">「任意の波形は正弦波の和として表せる（フーリエ級数）」／「時間波形 ↔ 周波数スペクトルの変換」／「FFT は離散版の高速アルゴリズム」の 3 点を 3〜5 行で説明できるように。<br>調べ先：Wikipedia「フーリエ変換」「高速フーリエ変換」、YouTube の直感的解説動画（3Blue1Brown など）も有効。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-1" data-placeholder="自分の言葉でまとめる（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-2">R-2. 倍音 vs 非調和成分の違いをまとめる</label>
+  <p class="task-hint">基音（fundamental）・<strong>整数倍音（harmonics）</strong>・<strong>非調和部分音（inharmonic partials, modes）</strong>の違い。<br>クラリネットやフルートのような<strong>気柱振動／弦振動</strong>は周波数比が整数倍に近い → 「ピッチを感じる音」。<br>一方、ドラム（膜振動）・シンバル（板振動）・木魚（棒振動）は<strong>固有モードが整数比にならない</strong> → 「ピッチ感が薄い／ない音」。<br>例：理想的な丸い膜の振動モード比は 1 : 1.59 : 2.14 : 2.30 : 2.65 …（ベッセル関数の零点）で、整数比からズレている。これが「ドンッ／カンッ」の打楽器らしさの正体。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-2" data-placeholder="自分の言葉でまとめる（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-3">R-3. パーカッションの発音原理（物理）を調べる</label>
+  <p class="task-hint">
+    打楽器は振動体の種類で 3 系統に分けて理解すると整理しやすい：
+    <ul>
+      <li><strong>膜（メンブラフォン）</strong>：キックドラム、スネア、タム、ティンパニ。打面が面振動 → 低めの基音 + 多数の非調和モード。スネアはさらに裏面の<strong>スナッピー（金属ワイヤ）</strong>でノイズ成分が乗る。</li>
+      <li><strong>板／棒（イディオフォン）</strong>：シンバル、トライアングル、ウッドブロック、シロフォン。<strong>金属系</strong>はモード密度が高くノイズに近い、<strong>木系</strong>はモードが少なく明瞭なピッチ感が出やすい。</li>
+      <li><strong>電子的にエミュレートされたもの</strong>：TR-808 / 909 のキックは「サイン波 + ピッチエンベロープ」、スネアは「サイン 2 本 + バンドパスノイズ」と、物理現象を抽象化した合成で作られる。今回は実装容易性からこちら寄りで設計するのが現実的。
+    </ul>
+    調べ先：Wikipedia「打楽器」「メンブラノフォン」「TR-808」、Sound on Sound 誌の "Synth Secrets" シリーズ（特に Drum Synthesis 回）。
+  </p>
+  <div class="answer-box" contenteditable="true" data-key="aR-3" data-placeholder="採用するドラム種別と、それぞれの発音原理（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-4">R-4. パーカッション単音の録音を入手する</label>
+  <p class="task-hint">YouTube / freesound.org / drum sample pack などから、採用するドラム種別ごとに単音（ワンショット）を確保。理想は「アコースティックドラム」と「TR-808/909 系」を両方並べて聞き比べると、合成の方向性が決めやすい。使った音源名・URL を下に記録。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-4" data-placeholder="使用した音源（URL・ドラム種別・出典など）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-5">R-5. Audacity でスペクトログラム解析する（時間 × 周波数）</label>
+  <p class="task-hint">
+    旋律楽器と違い、パーカッションは「<strong>時間方向の変化</strong>」が音色の本質。FFT 1 枚だけでなく、<strong>スペクトログラム</strong>で見ること。
+    手順：
+    <ol>
+      <li>音源を Audacity で開く</li>
+      <li>トラック名 → 「スペクトログラム」表示に切り替え</li>
+      <li>設定：ウィンドウサイズ 1024〜2048、関数 Hann、最低周波数 20Hz、最高周波数 12000Hz 程度</li>
+      <li>ヒット直後（〜10ms）と減衰中盤（〜100ms）と末尾（〜500ms）の 3 点で、強い周波数帯を読む</li>
+      <li>下の表に主要モード周波数と減衰の早さを記入</li>
+    </ol>
+  </p>
+  <div class="task-hint">
+    <strong>💡 コツと注意点（調べ方）</strong>
+    <ul>
+      <li><strong>ピッチ成分の「下降スイープ」を確認</strong>：キック・タムは打った瞬間が最も高く、すぐに低くなる（ピッチエンベロープ）。スペクトログラムで斜めに下がる線として見える。これが合成の鍵。</li>
+      <li><strong>ノイズ成分と調和成分の比率</strong>：ハイハット・シンバルはほぼ全帯域ノイズ、スネアは「サイン的成分 + ノイズ」の混合、キックはほぼ調和（サイン的）成分。</li>
+      <li><strong>減衰時間 T60</strong>：音が初期から 60 dB 落ちるまでの時間。キックは 200〜400ms、スネアは 100〜200ms、ハイハットは 50〜150ms（クローズド）/ 数秒（オープン）など、ドラム種別で全然違う。</li>
+      <li><strong>サンプル音源は WAV/FLAC を優先</strong>：MP3 は高域のシャーシャー感（シンバル系で重要）が劣化することがある。</li>
+    </ul>
+    <strong>🔧 Audacity 以外の解析ツール</strong>
+    <ul>
+      <li><strong>Python (numpy + scipy.signal.spectrogram + matplotlib)</strong>：スペクトログラム画像を一発生成。減衰時間も計算で出せる。</li>
+      <li><strong>Sonic Visualiser</strong>：高解像度のスペクトログラムが見やすい。フリー。</li>
+    </ul>
+    <em>※ 上記は Claude（AI）の知識に基づく情報です。Audacity のバージョンや OS によってメニュー文言・UI が違う可能性があるので、まず自分の環境で実際に動かして確認してください。</em>
+  </div>
+  <div class="answer-box" contenteditable="true" data-key="aR-5" data-placeholder="採用するドラム種別ごとの主要周波数帯・減衰時間・特徴的なスイープ（自動保存）"></div>
+  <table>
+    <tr><th>ドラム種別</th><th>初期ピーク周波数 (Hz)</th><th>減衰後の支配周波数 (Hz)</th><th>主要ノイズ帯 (Hz)</th><th>減衰時間 T60 (ms)</th><th>備考</th></tr>
+    <tr>
+      <td contenteditable="true" data-key="tR-d1-name" data-placeholder="例：キック"></td>
+      <td contenteditable="true" data-key="tR-d1-fpeak" data-placeholder="例：120 Hz"></td>
+      <td contenteditable="true" data-key="tR-d1-fsus" data-placeholder="例：50 Hz"></td>
+      <td contenteditable="true" data-key="tR-d1-noise" data-placeholder="例：—（ほぼ無し）"></td>
+      <td contenteditable="true" data-key="tR-d1-t60" data-placeholder="例：300 ms"></td>
+      <td contenteditable="true" data-key="tR-d1-note" data-placeholder="ピッチ下降の幅・スイープ時間など"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tR-d2-name" data-placeholder="例：スネア"></td>
+      <td contenteditable="true" data-key="tR-d2-fpeak"></td>
+      <td contenteditable="true" data-key="tR-d2-fsus"></td>
+      <td contenteditable="true" data-key="tR-d2-noise"></td>
+      <td contenteditable="true" data-key="tR-d2-t60"></td>
+      <td contenteditable="true" data-key="tR-d2-note"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tR-d3-name" data-placeholder="例：ハイハット"></td>
+      <td contenteditable="true" data-key="tR-d3-fpeak"></td>
+      <td contenteditable="true" data-key="tR-d3-fsus"></td>
+      <td contenteditable="true" data-key="tR-d3-noise"></td>
+      <td contenteditable="true" data-key="tR-d3-t60"></td>
+      <td contenteditable="true" data-key="tR-d3-note"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tR-d4-name" data-placeholder="（任意）"></td>
+      <td contenteditable="true" data-key="tR-d4-fpeak"></td>
+      <td contenteditable="true" data-key="tR-d4-fsus"></td>
+      <td contenteditable="true" data-key="tR-d4-noise"></td>
+      <td contenteditable="true" data-key="tR-d4-t60"></td>
+      <td contenteditable="true" data-key="tR-d4-note"></td>
+    </tr>
+  </table>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-6">R-6. 測定結果から設計指針を抽出</label>
+  <p class="task-hint">表から「採用するドラム種別ごとに、ピッチエンベロープの下降幅・ノイズ帯域・減衰時間」を読み取って、3〜4 行でまとめる。例：「キックは 150Hz → 50Hz に 50ms で下降、減衰 300ms → サイン波 + ピッチエンベロープで実装」「ハイハットは 8〜12kHz の HPF ノイズ、減衰 80ms → ホワイトノイズ + HPF + 短い AD」など。2 章の音源設計の根拠になる。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-6" data-placeholder="測定から導いた設計方針（ドラムごと）"></div>
+</div>
+
+<h2>1. パーカッション音色の表現方針</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-1">1-1. 鋭い立ち上がり（トランジェント）の表現</label>
+  <p class="task-hint">打楽器は「Attack が極端に短い／ほぼ 0」のが特徴。Attack を 0ms にするとクリックノイズが出るので、1〜5 ms 程度の極短 Attack で立ち上げる、あるいは波形の頭にクリックを意図的に足すなどの整理。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-2">1-2. ピッチを持つ音 vs 持たない音の使い分け</label>
+  <p class="task-hint">キック／タム＝ピッチ感あり、ハイハット／シンバル／スネア＝ピッチ感薄め、という分類を踏まえ、採用するドラムごとに「ピッチ成分とノイズ成分の比」を決める。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-3">1-3. ドラム特有の「胴鳴り／空気感」をどう表現するか</label>
+  <p class="task-hint">バンドパスノイズの帯域をドラムごとに変える、初期のクリック成分を足す、わずかなリバーブを掛ける、など。シンプル実装で済ませるなら「胴鳴り＝主モード周波数の短いサイン波」で十分。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-4">1-4. 複数ドラム間の音色キャラの差別化</label>
+  <p class="task-hint">きらきら星の伴奏なら最低でも「低音（キック）／中音（スネアまたは木片系）／高音（ハイハット）」の 3 種類は欲しい。各ドラムでベース構成・ノイズ帯域・減衰時間が明確に違うこと。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>2. 音源生成方式</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-1">2-1. ベース構成の選択（ドラム種別ごと）</label>
+  <p class="task-hint">
+    定番の合成方式：
+    <ul>
+      <li><strong>キック</strong>：サイン波 + 急降下するピッチエンベロープ（例：150Hz→50Hz を 30ms で）+ ごく短いクリック</li>
+      <li><strong>スネア</strong>：サイン 2 本（180Hz, 330Hz 程度）+ バンドパスノイズ（中心 1〜2kHz）</li>
+      <li><strong>ハイハット（クローズド）</strong>：ホワイトノイズ + HPF（カットオフ 8〜10kHz）+ 短い AD</li>
+      <li><strong>ウッドブロック／クラベス</strong>：高めのサイン波 2 本（800Hz, 2400Hz 程度）+ 極短減衰</li>
+    </ul>
+    どの方式を採用するかと、その根拠を書く。
+  </p>
+  <div class="answer-box" contenteditable="true" data-key="a2-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-2">2-2. ノイズ成分の帯域設計</label>
+  <p class="task-hint">ホワイト／ピンク／バンドパスのどれを使うか。ハイハットは HPF 8kHz 以上、スネアは BPF 1〜3kHz など、ドラムごとに帯域が違う。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-3">2-3. ピッチエンベロープの設計（キック・タム用）</label>
+  <p class="task-hint">「初期ピッチ → 持続ピッチ」「下降に要する時間」を決める。キックは 150→50Hz を 30〜50ms で下降が定番。下降が速すぎると「ピッ」、遅すぎると「ボーン」になる。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-4">2-4. フィルタ処理の要否</label>
+  <p class="task-hint">ノイズ整形のための BPF / HPF が中心。キック・タムは LPF をかけて鋭さを抑えるのも定番。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-5">2-5. AD（または ADSR）エンベロープの設定方針</label>
+  <p class="task-hint">パーカッションは <strong>Sustain なしの AD（または AHR）</strong>でよい。Attack 1〜5ms、Decay = T60 を基準に決める。Release は基本不要（鍵盤を「離す」概念がない）。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-5" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-6">2-6. 採用するドラム種別の最終確定</label>
+  <p class="task-hint">きらきら星の伴奏として何種類用意するか。最低 2 種類（キック・ハイハットなど）、推奨 3 種類（キック・スネア・ハイハット）。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-6" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>3. Arduinoから送るデータとの対応</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-1">3-1. 必要なデータ項目の洗い出し</label>
+  <p class="task-hint">
+    旋律楽器とは違い、<strong>NOTE 番号（音程）はほぼ不要</strong>。代わりに：
+    <ul>
+      <li>楽器種別（パーカッション）</li>
+      <li><strong>ドラム種別</strong>（キック=0 / スネア=1 / ハイハット=2 …）</li>
+      <li>発音タイミング（ヒット）</li>
+      <li>強弱（ベロシティ）：必要なら入れる。リズム楽器でアクセントを付けたい場合に有効</li>
+    </ul>
+    どの項目が必要十分か判断。
+  </p>
+  <div class="answer-box" contenteditable="true" data-key="a3-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-2">3-2. データ形式（3 人で統一）</label>
+  <p class="task-hint">フルート・クラリネット・オルガンと同じ 5〜7 バイトのバイナリパケットに乗せる。NOTE フィールドを「ドラム種別 ID」として流用するのが楽（パーカッションでは MIDI ノート番号は不要なので）。3 人と統一仕様を確認。</p>
+  <div class="answer-box" contenteditable="true" data-key="a3-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-3">3-3. 輪唱と独立して拍を刻むためのトリガ設計</label>
+  <p class="task-hint">パーカッションは輪唱に参加せず、SYNC（小節頭マーカー）を直接受け取って独自にリズムパターンを発火する。SYNC 受信 → 当該小節のリズムパターン配列を参照 → 各拍／半拍／16 分音符のタイミングで Processing にヒットイベントを送出、という流れ。</p>
+  <div class="answer-box" contenteditable="true" data-key="a3-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>4. Processing側の再生処理</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-1">4-1. シリアル受信後の処理フロー</label>
+  <p class="task-hint">受信 → パース → ドラム種別で分岐 → 該当 Voice をトリガ。1 回のヒットは数百 ms で終わるので、Note Off の概念は不要（または velocity=0 を「ハイハットのオープン → クローズへの切り替え」用に流用してもよい）。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-2">4-2. パーカッション選択時の分岐処理</label>
+  <p class="task-hint">楽器種別 = パーカッション だったときに、ドラム種別 ID を見て kick.hit() / snare.hit() / hihat.hit() のどれを呼ぶか分岐する。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-3">4-3. ヒット時の挙動と同時発音</label>
+  <p class="task-hint">キックとハイハットは同時に鳴ることがある。各ドラムを独立した Voice として持ち、互いにブロックしないこと。同じドラムが連打された場合は前の音をフェードアウトしてから再トリガ。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-4">4-4. 連打時のクリック・歪み対策</label>
+  <p class="task-hint">Attack を完全に 0ms にしないこと（最低 1ms 推奨）。前のヒットがまだ鳴っている状態で再トリガする場合は、波形の急な不連続を避けるためクロスフェード（数 ms）する。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-5">4-5. タイミング精度の確保</label>
+  <p class="task-hint">パーカッションは数 ms のズレが致命的に聞こえる。シリアル受信から発音までの遅延を最小化する。Processing 側で Serial を `bufferUntil` でなく `available()` ループでタイトに読む、ノイズフロアの抑制、など。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-5" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>5. パーカッション特有の検討事項</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-1">5-1. 非調和成分の扱い</label>
+  <p class="task-hint">「整数倍音」ではなく「モード周波数（非整数比）」で組む。スネアならサイン 2 本を 180Hz と 330Hz など整数比でない周波数で重ねる。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-2">5-2. ピッチを持つ音 / 持たない音 の合成手法の使い分け</label>
+  <p class="task-hint">「サイン + ピッチエンベロープ」（キック）と「フィルタ済みノイズ」（ハイハット）は実装が全く別物。両方の Voice クラスを別々に用意する。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-3">5-3. 輪唱に巻き込まれずに拍を刻み続けるためのデータ設計</label>
+  <p class="task-hint">指揮者からの SYNC（global_bar / BPM）に直接同期し、entry_offset = 0 で第 0 小節から第 12 小節まで全部鳴らす。ループパターン（4/4 で 1 小節分）を保持して、SYNC ごとにそれを発火するのが最小実装。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-4">5-4. シンプル実装でドラムらしさを出す最小構成</label>
+  <p class="task-hint">時間がないときに何だけ残せば「ドラムっぽく」聞こえるか。例：キック（サイン + ピッチ降下）+ ハイハット（ノイズ + HPF + 短い減衰）の 2 種類だけでも、4 つ打ち＋裏拍ハットでバンド感は出る。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>成果物</h2>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-1">D1. パーカッション音色設計方針（まとめ）</label>
+  <p class="task-hint">1〜2 章の結論を自分の言葉で整理。採用するドラム種別とその役割分担も明記。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-2">D2. ドラム種別ごとのパラメータ表（波形・ノイズ・フィルタ・AD）</label>
+  <p class="task-hint">実装で使う具体値。下の表は記入の目安。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-2" data-placeholder="補足・全体方針（自動保存）"></div>
+  <table>
+    <tr><th>ドラム名</th><th>ベース構成</th><th>ピッチ成分 (Hz)</th><th>ノイズ帯域 (Hz)</th><th>Attack (ms)</th><th>Decay (ms)</th><th>備考</th></tr>
+    <tr>
+      <td contenteditable="true" data-key="tD-d1-name" data-placeholder="例：キック"></td>
+      <td contenteditable="true" data-key="tD-d1-base" data-placeholder="例：サイン + ピッチエンベロープ"></td>
+      <td contenteditable="true" data-key="tD-d1-pitch" data-placeholder="例：150 → 50 (30ms で下降)"></td>
+      <td contenteditable="true" data-key="tD-d1-noise" data-placeholder="例：—"></td>
+      <td contenteditable="true" data-key="tD-d1-a" data-placeholder="例：1"></td>
+      <td contenteditable="true" data-key="tD-d1-d" data-placeholder="例：300"></td>
+      <td contenteditable="true" data-key="tD-d1-note"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tD-d2-name" data-placeholder="例：スネア"></td>
+      <td contenteditable="true" data-key="tD-d2-base"></td>
+      <td contenteditable="true" data-key="tD-d2-pitch"></td>
+      <td contenteditable="true" data-key="tD-d2-noise"></td>
+      <td contenteditable="true" data-key="tD-d2-a"></td>
+      <td contenteditable="true" data-key="tD-d2-d"></td>
+      <td contenteditable="true" data-key="tD-d2-note"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tD-d3-name" data-placeholder="例：ハイハット"></td>
+      <td contenteditable="true" data-key="tD-d3-base"></td>
+      <td contenteditable="true" data-key="tD-d3-pitch"></td>
+      <td contenteditable="true" data-key="tD-d3-noise"></td>
+      <td contenteditable="true" data-key="tD-d3-a"></td>
+      <td contenteditable="true" data-key="tD-d3-d"></td>
+      <td contenteditable="true" data-key="tD-d3-note"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tD-d4-name" data-placeholder="（任意）"></td>
+      <td contenteditable="true" data-key="tD-d4-base"></td>
+      <td contenteditable="true" data-key="tD-d4-pitch"></td>
+      <td contenteditable="true" data-key="tD-d4-noise"></td>
+      <td contenteditable="true" data-key="tD-d4-a"></td>
+      <td contenteditable="true" data-key="tD-d4-d"></td>
+      <td contenteditable="true" data-key="tD-d4-note"></td>
+    </tr>
+  </table>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-3">D3. 必要な通信データ項目</label>
+  <p class="task-hint">Arduino ↔ Processing の取り決め。「楽器種別 = パーカッション」「ドラム種別 ID」「ベロシティ（任意）」など。3 人と統一仕様を反映。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-4">D4. Processing 側の再生処理設計</label>
+  <p class="task-hint">擬似コードまたは実コード。Voice クラスの分担と、ヒットイベントを受けてからの処理フロー。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-5">D5. リズムパターン定義（楽譜データ相当）</label>
+  <p class="task-hint">きらきら星の伴奏として、4/4 の 1 小節分にどのドラムがどの拍／裏拍で鳴るかを表で定義。例：</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-5" data-placeholder="書き込み（自動保存）"></div>
+  <table>
+    <tr><th>ドラム</th><th>1 拍目</th><th>1.5 (ウラ)</th><th>2 拍目</th><th>2.5</th><th>3 拍目</th><th>3.5</th><th>4 拍目</th><th>4.5</th></tr>
+    <tr>
+      <td contenteditable="true" data-key="tP-r1-name" data-placeholder="例：キック"></td>
+      <td contenteditable="true" data-key="tP-r1-1" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r1-2"></td>
+      <td contenteditable="true" data-key="tP-r1-3"></td>
+      <td contenteditable="true" data-key="tP-r1-4"></td>
+      <td contenteditable="true" data-key="tP-r1-5" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r1-6"></td>
+      <td contenteditable="true" data-key="tP-r1-7"></td>
+      <td contenteditable="true" data-key="tP-r1-8"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tP-r2-name" data-placeholder="例：スネア"></td>
+      <td contenteditable="true" data-key="tP-r2-1"></td>
+      <td contenteditable="true" data-key="tP-r2-2"></td>
+      <td contenteditable="true" data-key="tP-r2-3" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r2-4"></td>
+      <td contenteditable="true" data-key="tP-r2-5"></td>
+      <td contenteditable="true" data-key="tP-r2-6"></td>
+      <td contenteditable="true" data-key="tP-r2-7" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r2-8"></td>
+    </tr>
+    <tr>
+      <td contenteditable="true" data-key="tP-r3-name" data-placeholder="例：ハイハット"></td>
+      <td contenteditable="true" data-key="tP-r3-1" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r3-2" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r3-3" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r3-4" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r3-5" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r3-6" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r3-7" data-placeholder="○"></td>
+      <td contenteditable="true" data-key="tP-r3-8" data-placeholder="○"></td>
+    </tr>
+  </table>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-6">D6. パラメータ表・擬似コード（任意）</label>
+  <p class="task-hint">発表で示せる形に。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-6" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>検証（最終チェック）</h2>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-1">V1. 実際のドラム音と聴き比べて「ドラムっぽく」聞こえるか</label>
+  <p class="task-hint">YouTube 等でドラム単音／ループを再生し、自分の出力と比較。3 種類のドラムが互いに識別できるかも確認。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-1" data-placeholder="聞き比べた所感・気づいた差分を書き込み"></div>
+</div>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-2">V2. スペクトログラムを可視化し、調べた本物の波形と形が近いか確認</label>
+  <p class="task-hint">Processing 出力を WAV 保存 → Python（numpy + scipy.signal.spectrogram）や Audacity でスペクトログラム表示 → Web で調べた本物のスペクトログラムと比較。ピッチ下降・ノイズ帯域・減衰時間が一致しているか。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-2" data-placeholder="比較結果（時間 × 周波数の特徴）"></div>
+</div>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-3">V3. 他楽器（フルート・クラリネット・オルガン）と並べて違和感ないか</label>
+  <p class="task-hint">3 楽器が輪唱でメロディを奏でているところに、自分のリズムを重ねて再生。テンポずれ・タイミング揺れ・音量バランスを確認。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-3" data-placeholder="合奏した感想・調整したパラメータ"></div>
+</div>
+
+<h2>参考：AI との付き合い方</h2>
+<p>AI（Claude / ChatGPT）は「何も知らない状態の質問」には平均的な答えしか返しません。次のステップで使うと精度が上がります。</p>
+<ol>
+  <li>Wikipedia・Synth Secrets シリーズ・TR-808 解説記事でドラム合成の基礎を 10〜15 分入れる</li>
+  <li>「キックは 150Hz から 50Hz に 30ms で落ちるサイン + ピッチエンベロープと聞いたが、Processing.sound でこれを実装するには？」のように<strong>具体的な数値と API 名をセットで聞く</strong></li>
+  <li>コード依頼時は「processing.sound の SinOsc・WhiteNoise・Env・LowPass を使って」のように<strong>使う API を指定</strong>すると、存在しないメソッドを捏造されにくい</li>
+</ol>
+
+<h2>付録：実装のたたき台（構造サンプル）</h2>
+<pre><code>// ※ クラス名・メソッド名・引数は processing.sound 公式リファレンスで要確認
+
+import processing.serial.*;
+import processing.sound.*;
+
+Serial port;
+KickVoice  kick;
+SnareVoice snare;
+HiHatVoice hihat;
+
+final int HEADER       = 0xAA;
+final int INST_PERC    = 3;     // パーカッション楽器 ID（3 人で統一）
+final int DRUM_KICK    = 0;
+final int DRUM_SNARE   = 1;
+final int DRUM_HIHAT   = 2;
+
+void setup() {
+  size(400, 200);
+  // port = new Serial(this, Serial.list()[?], 115200);
+  kick  = new KickVoice();
+  snare = new SnareVoice();
+  hihat = new HiHatVoice();
+}
+
+void draw() { background(240); }
+
+void serialEvent(Serial p) {
+  // 5 バイトパケットを読み、ドラム種別で分岐：
+  // if (instrument == INST_PERC) {
+  //   switch (note /* ここをドラム種別 ID として流用 */) {
+  //     case DRUM_KICK:  kick.hit(velocity);  break;
+  //     case DRUM_SNARE: snare.hit(velocity); break;
+  //     case DRUM_HIHAT: hihat.hit(velocity); break;
+  //   }
+  // }
+}
+
+class KickVoice {
+  // SinOsc + Env（ピッチエンベロープ用）+ Env（音量用）
+  void hit(int velocity) {
+    // 1) ピッチを 150Hz に設定
+    // 2) ピッチエンベロープを発火（30ms で 50Hz へ）
+    // 3) 音量エンベロープ Attack=1ms, Decay=300ms
+  }
+}
+
+class HiHatVoice {
+  // WhiteNoise + HighPass + Env
+  void hit(int velocity) {
+    // HPF カットオフ 8000Hz, Attack=1ms, Decay=80ms
+  }
+}
+</code></pre>
+
+<div class="save-indicator" id="saveIndicator">保存しました</div>
+
+<script>
+(function(){
+  const keyPrefix = 'ws:' + document.title + ':';
+  const indicator = document.getElementById('saveIndicator');
+  let hideTimer;
+
+  function flashSaved() {
+    indicator.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => indicator.classList.remove('show'), 800);
+  }
+
+  function togglePlaceholder(el) {
+    const html = el.innerHTML.trim();
+    const isEmpty = html === '' || html === '<br>' || html === '<br/>';
+    el.classList.toggle('is-empty', isEmpty);
+  }
+
+  document.querySelectorAll('[contenteditable="true"][data-key]').forEach(el => {
+    const storageKey = keyPrefix + el.dataset.key;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) el.innerHTML = saved;
+    togglePlaceholder(el);
+    el.addEventListener('input', () => {
+      localStorage.setItem(storageKey, el.innerHTML);
+      togglePlaceholder(el);
+      flashSaved();
+    });
+    el.addEventListener('blur', () => togglePlaceholder(el));
+  });
+
+  document.querySelectorAll('input[type="checkbox"][data-key]').forEach(el => {
+    const storageKey = keyPrefix + el.dataset.key;
+    if (localStorage.getItem(storageKey) === '1') el.checked = true;
+    el.addEventListener('change', () => {
+      localStorage.setItem(storageKey, el.checked ? '1' : '0');
+      flashSaved();
+    });
+  });
+
+  window.exportAnswers = function() {
+    const data = {};
+    Object.keys(localStorage).filter(k => k.startsWith(keyPrefix)).forEach(k => {
+      data[k.slice(keyPrefix.length)] = localStorage.getItem(k);
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'percussion_design_answers.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  window.importAnswers = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          Object.entries(data).forEach(([k,v]) => localStorage.setItem(keyPrefix + k, v));
+          location.reload();
+        } catch(err) { alert('読み込みに失敗しました: ' + err.message); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  window.clearAll = function() {
+    if (!confirm('全ての記入内容を削除します。よろしいですか？')) return;
+    Object.keys(localStorage).filter(k => k.startsWith(keyPrefix)).forEach(k => localStorage.removeItem(k));
+    location.reload();
+  };
+})();
+</script>
+
+</body>
+</html>

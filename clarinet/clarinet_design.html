@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>クラリネット音色 設計ワークリスト</title>
+<style>
+  :root{
+    --accent:#a05a2c;--accent-light:#f5ece2;--text:#2c2620;--muted:#7a6b5d;
+    --border:#e3d6c5;--code-bg:#faf5ee;--warn:#fff6e6;--warn-border:#c69030;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;line-height:1.8;color:var(--text);max-width:960px;margin:0 auto;padding:32px 24px 80px;background:#fbfaf7;}
+  h1{font-size:28px;border-bottom:3px solid var(--accent);padding-bottom:10px;margin-bottom:8px;}
+  .subtitle{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  h2{font-size:22px;background:var(--accent);color:#fff;padding:10px 16px;border-radius:6px;margin-top:40px;}
+  h3{font-size:16px;color:var(--accent);border-left:4px solid var(--accent);padding-left:10px;margin-top:24px;}
+  ul,ol{padding-left:24px;}
+  li{margin:4px 0;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-left:4px solid var(--accent);padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.55;border-radius:4px;}
+  code{font-family:"Menlo","Consolas",monospace;}
+  table{border-collapse:collapse;width:calc(100% - 26px);margin:10px 0 0 26px;background:#fff;}
+  th,td{border:1px solid var(--border);padding:8px 12px;text-align:left;font-size:13px;vertical-align:top;}
+  th{background:var(--accent-light);color:var(--text);font-weight:bold;}
+  td[contenteditable="true"]{cursor:text;background:#fff;transition:background .15s;}
+  td[contenteditable="true"]:focus{outline:none;background:var(--accent-light);box-shadow:inset 0 0 0 2px var(--accent);}
+  td[contenteditable="true"].is-empty::before{content:attr(data-placeholder);color:var(--muted);font-size:12px;font-style:italic;}
+  .task-hint ol{padding-left:20px;margin:4px 0;}
+  .task-hint code{background:var(--code-bg);padding:1px 4px;border-radius:3px;font-size:12px;}
+  .alert{background:var(--warn);border-left:4px solid var(--warn-border);padding:14px 18px;margin:16px 0;border-radius:4px;font-size:14px;}
+  .alert ul{margin:8px 0 0;padding-left:20px;}
+  .alert li{margin:6px 0;}
+  details.brief{background:#fff;border:1px solid var(--border);border-radius:6px;padding:14px 20px;margin:16px 0;}
+  details.brief summary{cursor:pointer;font-weight:bold;color:var(--accent);user-select:none;}
+  details.brief[open] summary{margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .brief-content{font-size:14px;line-height:1.75;color:var(--text);}
+  .brief-content h4{margin:16px 0 6px;color:var(--accent);font-size:15px;}
+  .brief-content p{margin:8px 0;}
+  .brief-content ul{padding-left:22px;margin:4px 0 10px;}
+  .brief-to{font-weight:bold;color:var(--muted);}
+  .task{background:#fff;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;padding:12px 16px;margin:10px 0;}
+  .task-label{display:flex;align-items:flex-start;gap:8px;font-weight:bold;font-size:15px;cursor:pointer;line-height:1.5;}
+  .task-label input[type="checkbox"]{margin-top:5px;transform:scale(1.15);accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
+  .task-hint{font-size:13px;color:var(--muted);margin:8px 0 6px 26px;line-height:1.6;}
+  .answer-box{border:1px dashed var(--border);min-height:60px;background:#fff;padding:10px 14px;margin:6px 0 0 26px;font-size:14px;color:var(--text);border-radius:3px;line-height:1.7;cursor:text;transition:border-color .15s,box-shadow .15s;}
+  .answer-box:focus{outline:none;border-color:var(--accent);border-style:solid;box-shadow:0 0 0 2px var(--accent-light);}
+  .answer-box.is-empty::before{content:attr(data-placeholder);color:var(--muted);font-size:13px;pointer-events:none;}
+  .deliverable{background:var(--accent-light);border-left:4px solid var(--accent);}
+  .verify{background:#f0f7f0;border-left:4px solid #5c9c5e;}
+  .save-indicator{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;}
+  .save-indicator.show{opacity:.85;}
+  .btn-row{margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:13px;font-family:inherit;}
+  .btn.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .btn:hover{opacity:.9;}
+</style>
+</head>
+<body>
+
+<h1>クラリネット音色 設計ワークリスト</h1>
+<div class="subtitle">担当：@B2_SATO NATSUMI（クラリネット） ／ Arduino → USBシリアル → Processing 構成</div>
+
+<details class="brief">
+  <summary>📩 元の依頼メッセージ（クリックで展開）</summary>
+  <div class="brief-content">
+    <p class="brief-to">@B2_SATO NATSUMI</p>
+    <p>お疲れ様です。<br>Arduinoで音階データを保持し、PCと有線接続した上で、Processing側で受信データをもとに音を鳴らす仕組みを実装予定です。<br>今回、クラリネット音色の詳細設計をお願いしたいです。</p>
+    <h4>前提構成</h4>
+    <ul>
+      <li>Arduino側で音階データを保持する</li>
+      <li>ArduinoからUSBシリアル通信でPCへ送信する</li>
+      <li>Processing側で受信したデータをもとに音を再生する</li>
+      <li>楽器ごとに音色を切り替えられる構成を想定する</li>
+    </ul>
+    <h4>設計してほしい内容</h4>
+    <p><strong>1. クラリネット音色の表現方針</strong></p>
+    <ul><li>木管らしい温かみをどう表現するか</li><li>フルートより暗めの音色をどう作るか</li><li>中低音の響きをどう出すか</li><li>柔らかさと芯のある感じをどう両立するか</li></ul>
+    <p><strong>2. 音源生成方式</strong></p>
+    <ul><li>ベース波形は何にするか</li><li>奇数次倍音を重視するか</li><li>倍音構成をどう設計するか</li><li>音をこもらせすぎない工夫</li><li>フィルタ処理の要否</li><li>ADSRの設定方針</li></ul>
+    <p><strong>3. Arduinoから送るデータとの対応</strong></p>
+    <ul><li>楽器種別</li><li>音階情報</li><li>発音開始／停止</li><li>音量やニュアンス制御の必要性</li></ul>
+    <p>クラリネット実装において必要十分なデータ形式も考える。</p>
+    <p><strong>4. Processing側の再生処理</strong></p>
+    <ul><li>シリアル受信後の処理フロー</li><li>クラリネット音選択時の分岐処理</li><li>ノートオン時の立ち上がり方</li><li>ノートオフ時の減衰方法</li><li>音切り替え時に不自然にならない工夫</li></ul>
+    <p><strong>5. クラリネット特有の検討事項</strong></p>
+    <ul><li>奇数次倍音中心で音色を作るべきか</li><li>フルートとの差別化をどこで出すか</li><li>中低域の厚みをどう表現するか</li><li>シンプル実装でクラリネットらしさを出す最小構成</li></ul>
+    <p><strong>成果物</strong>：設計方針／波形・倍音・フィルタ・ADSR案／通信データ／再生処理設計／パラメータ表・擬似コード</p>
+  </div>
+</details>
+
+<div class="alert">
+  <strong>このドキュメントの使い方</strong>
+  <ul>
+    <li><strong>記入欄はクリックして直接書き込めます</strong>。入力内容はブラウザに自動保存され、PC を再起動しても残ります（※ ブラウザのデータ削除・シークレットモード・別ブラウザで開いた場合は残りません）。</li>
+    <li><strong>AI（Claude / ChatGPT）活用のコツ</strong>：いきなり「クラリネット音源を作って」と聞くより、先に Wikipedia や解説記事で事前知識を入れ、「クラリネットは○○という特徴があると聞いたが具体的には？」と聞く方が回答の精度が上がります。丸投げより、知った上で壁打ちするイメージ。</li>
+    <li><strong>情報源のヒント</strong>：Web で「clarinet spectrum」「clarinet waveform」と画像検索すると波形・スペクトル画像が結構出てきます。それを基準に設計すると方向性を外しにくいです。</li>
+    <li><strong>最終チェックは 2 段階</strong>：① 実際のクラリネット音源と聴き比べて似ているか。② 自分の出力波形のスペクトルを Python / Audacity などで可視化し、調べた波形と形が近いか。両方クリアしたら完成。</li>
+  </ul>
+</div>
+
+<div class="btn-row">
+  <button class="btn" onclick="exportAnswers()">💾 記入内容をJSONで書き出し</button>
+  <button class="btn secondary" onclick="importAnswers()">📂 JSONから読み込み</button>
+  <button class="btn secondary" onclick="clearAll()">🗑 全削除</button>
+</div>
+
+<h2>前提構成</h2>
+<ul>
+  <li>Arduino 側で音階データを保持する</li>
+  <li>Arduino から USB シリアル通信で PC へ送信する</li>
+  <li>Processing 側で受信したデータをもとに音を再生する</li>
+  <li>楽器ごとに音色を切り替えられる構成を想定する</li>
+</ul>
+
+<h2>0. 音響基礎と担当楽器の特性調査（設計前のリサーチ）</h2>
+
+<div class="alert">
+  <strong>なぜ先にこれをやる？</strong>
+  <ul>
+    <li>音色設計は「物理的に何がどうなっているか」を理解していないと、パラメータをいじっても勘頼みになる。</li>
+    <li><strong>フーリエ変換 → 倍音構造 → 実測スペクトル</strong> の順で「目標の音が物理的にどんな構成か」をつかんでから設計に入ると、根拠を持って数値を決められる。</li>
+    <li>ここで得た知見は <strong>2 章（音源生成方式）・5 章（クラリネット特有の検討）</strong> で直接使う。クラリネットは奇数倍音優勢という明確な特徴があるので、実測でそれを確認するのが特に重要。</li>
+  </ul>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-1">R-1. フーリエ変換とは何かを自分の言葉でまとめる</label>
+  <p class="task-hint">「任意の波形は正弦波の和として表せる（フーリエ級数）」／「時間波形 ↔ 周波数スペクトルの変換」／「FFT は離散版の高速アルゴリズム」の 3 点を 3〜5 行で説明できるように。<br>調べ先：Wikipedia「フーリエ変換」「高速フーリエ変換」、YouTube の直感的解説動画（3Blue1Brown など）も有効。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-1" data-placeholder="自分の言葉でまとめる（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-2">R-2. 倍音構造の基礎をまとめる</label>
+  <p class="task-hint">基音 (fundamental) と倍音 (harmonics / overtones)、整数倍の関係、偶数倍音 vs 奇数倍音が音色に与える影響。代表波形との対応（サイン波＝倍音なし／のこぎり波＝全倍音／<strong>矩形波＝奇数倍音のみ</strong>）も書く。クラリネットは矩形波の倍音構成に似ることを意識。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-2" data-placeholder="自分の言葉でまとめる（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-3">R-3. クラリネットの発音原理（物理）を調べる</label>
+  <p class="task-hint">クラリネットはマウスピースの<strong>リード（薄い竹片）</strong>が振動して音を出し、<strong>片端閉・片端開の円筒管</strong>として振動する。この境界条件のため<strong>奇数倍音のみが定在波モードとして強調される</strong>（偶数倍音は弱い）。これがフルートとの決定的な違い。<br>リードの「擦れ音」的な微小ノイズも音色特徴。<br>調べ先：Wikipedia「クラリネット」「閉管（気柱振動）」、『音響学入門』類。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-3" data-placeholder="発音原理と、それが倍音構成（奇数倍音優勢）にどう繋がるか（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-4">R-4. クラリネットの単音録音を入手する</label>
+  <p class="task-hint">YouTube / freesound.org / 大学の音響資料サイト 等で C4 相当など単音の音源を確保。できればフルートの録音も並べて用意し、後で比較できるようにする。使った音源名・URL を下に記録。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-4" data-placeholder="使用した音源（URL・音名・演奏者など）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-5">R-5. Audacity で FFT スペクトル解析する</label>
+  <p class="task-hint">
+    手順：
+    <ol>
+      <li>音源を Audacity で開く</li>
+      <li>安定している区間（アタック/リリースを除く中間の 0.5〜1 秒）を選択</li>
+      <li>メニュー <code>解析 → スペクトル</code>（サイズ 4096〜8192、関数 Hann）</li>
+      <li>ピーク位置にカーソルを合わせて周波数と dB を読む</li>
+      <li>各倍音のレベルを下の表に記入。<strong>偶数と奇数の差</strong> に注目すること。</li>
+    </ol>
+  </p>
+  <div class="task-hint">
+    <strong>💡 コツと注意点（調べ方）</strong>
+    <ul>
+      <li><strong>MP3 より WAV / FLAC 推奨</strong>：MP3 は高次倍音が鈍ることがある。YouTube の音源は高圧縮なので、解析用にロスレス音源が手に入ればそちらを優先。</li>
+      <li><strong>エフェクト（リバーブ／EQ）付きは避ける</strong>：スペクトルが歪んで本来の倍音構成が見えにくくなる。ソロのクリーン録音を選ぶ。</li>
+      <li><strong>dB は相対値</strong>：表示される dB は曲全体の最大振幅を 0 dB とした基準値。絶対値は気にせず、基音比（各倍音が基音より何 dB 低いか）で見れば OK。</li>
+      <li><strong>ピッチのズレ</strong>：演奏のチューニングが正確でないと ×2, ×3 の理論周波数に完全一致しない。ピーク付近の値で妥協してよい。</li>
+    </ul>
+    <strong>🔧 Audacity 以外の解析ツール（選択肢）</strong>
+    <ul>
+      <li><strong>Python (numpy + scipy.fft + matplotlib)</strong>：AI にスクリプトを書かせて <code>python fft.py sample.wav</code> で一発解析。表作成まで自動化できる。厳密な数値が欲しい場合に。</li>
+      <li><strong>Sonic Visualiser</strong>：Audacity より見やすいスペクトログラム表示ができる無料ツール。</li>
+      <li><strong>SPAN（無料 VST プラグイン）</strong>：DAW と併用するならこれ。</li>
+    </ul>
+    <em>※ 上記は Claude（AI）の知識に基づく情報です。Audacity のバージョンや OS によってメニュー文言・UI が違う可能性があるので、まず自分の環境で実際に動かして確認してください。</em>
+  </div>
+  <div class="answer-box" contenteditable="true" data-key="aR-5" data-placeholder="基音の周波数・使用 FFT サイズ・気づいた特徴（偶奇差など）"></div>
+  <table>
+    <tr><th>倍音 (N)</th><th>種別</th><th>理論周波数 (基音 × N)</th><th>実測レベル (dB)</th><th>基音比 (dB, 1倍音=0)</th></tr>
+    <tr><td>1 (基音)</td><td>奇数</td><td>×1</td><td contenteditable="true" data-key="tR-h1-abs" data-placeholder="例：-14 dB"></td><td>0</td></tr>
+    <tr><td>2</td><td>偶数</td><td>×2</td><td contenteditable="true" data-key="tR-h2-abs"></td><td contenteditable="true" data-key="tR-h2-rel"></td></tr>
+    <tr><td>3</td><td>奇数</td><td>×3</td><td contenteditable="true" data-key="tR-h3-abs"></td><td contenteditable="true" data-key="tR-h3-rel"></td></tr>
+    <tr><td>4</td><td>偶数</td><td>×4</td><td contenteditable="true" data-key="tR-h4-abs"></td><td contenteditable="true" data-key="tR-h4-rel"></td></tr>
+    <tr><td>5</td><td>奇数</td><td>×5</td><td contenteditable="true" data-key="tR-h5-abs"></td><td contenteditable="true" data-key="tR-h5-rel"></td></tr>
+    <tr><td>6</td><td>偶数</td><td>×6</td><td contenteditable="true" data-key="tR-h6-abs"></td><td contenteditable="true" data-key="tR-h6-rel"></td></tr>
+    <tr><td>7</td><td>奇数</td><td>×7</td><td contenteditable="true" data-key="tR-h7-abs"></td><td contenteditable="true" data-key="tR-h7-rel"></td></tr>
+    <tr><td>8</td><td>偶数</td><td>×8</td><td contenteditable="true" data-key="tR-h8-abs"></td><td contenteditable="true" data-key="tR-h8-rel"></td></tr>
+  </table>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="cR-6">R-6. 測定結果から設計指針を抽出</label>
+  <p class="task-hint">表から「奇数倍音 vs 偶数倍音の比率」「何倍音まで目立つか」「ローパスの目安カットオフ周波数」を読み取って、2〜3 行でまとめる。例：「奇数倍音が偶数倍音より平均 N dB 強い → 矩形波ベース + ローパスでカットオフ M Hz 付近」など。2 章の音源設計の根拠になる。</p>
+  <div class="answer-box" contenteditable="true" data-key="aR-6" data-placeholder="測定から導いた設計方針（自動保存）"></div>
+</div>
+
+<h2>1. クラリネット音色の表現方針</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-1">1-1. 木管らしい温かみの表現</label>
+  <p class="task-hint">「温かみ」を音響的に何で表すか（倍音構成／フィルタ／ADSR のどれが寄与するか）整理する。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-2">1-2. フルートより暗めの音色を作る方法</label>
+  <p class="task-hint">スペクトル重心を下げる具体的な手段（偶数倍音を入れない／ローパスを低めにする など）を書く。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-3">1-3. 中低音の響きの出し方</label>
+  <p class="task-hint">サブ Osc／バンドパス／倍音の重ね方 など複数案の中から採用する手段を決める。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c1-4">1-4. 柔らかさと芯のある感じの両立</label>
+  <p class="task-hint">「芯」= 基音＋3倍音、「柔らかさ」= 高域の抑制、など役割分担を整理。</p>
+  <div class="answer-box" contenteditable="true" data-key="a1-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>2. 音源生成方式</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-1">2-1. ベース波形の選択</label>
+  <p class="task-hint">矩形波／サイン加算／その他 の中で何が合うか。矩形波は奇数倍音のみのフーリエ展開を持つ点に注目して判断。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-2">2-2. 奇数次倍音を重視するか</label>
+  <p class="task-hint">閉管楽器の物理特性を踏まえて判断。Yes/No と根拠。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-3">2-3. 倍音構成の設計</label>
+  <p class="task-hint">何倍音まで、どのレベルで重ねるか。Web で調べたクラリネット波形スペクトルを参考に。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-4">2-4. 音をこもらせすぎない工夫</label>
+  <p class="task-hint">ローパスを強くしすぎない／ベロシティでカットオフを動かす／アタック時だけフィルタを開く など。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-5">2-5. フィルタ処理の要否</label>
+  <p class="task-hint">ローパス／バンドパス／ハイパス、それぞれ何のために使うか。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-5" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c2-6">2-6. ADSR の設定方針</label>
+  <p class="task-hint">Attack / Decay / Sustain / Release の値と、そう決めた理由。</p>
+  <div class="answer-box" contenteditable="true" data-key="a2-6" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>3. Arduinoから送るデータとの対応</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-1">3-1. 必要なデータ項目の洗い出し</label>
+  <p class="task-hint">楽器種別／音階情報／発音開始・停止／音量やニュアンス制御 が必要か判断。クラリネットは velocity をフィルタカットオフ制御に使うと表情が出る。</p>
+  <div class="answer-box" contenteditable="true" data-key="a3-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c3-2">3-2. データ形式（3 人で統一）</label>
+  <p class="task-hint">テキスト（CSV）/ バイナリ、どちらにするか。フルート・オルガン担当と共通の形式にする必要あり。</p>
+  <div class="answer-box" contenteditable="true" data-key="a3-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>4. Processing側の再生処理</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-1">4-1. シリアル受信後の処理フロー</label>
+  <p class="task-hint">受信 → パース → 発音 までの流れを手順で書く。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-2">4-2. クラリネット音選択時の分岐処理</label>
+  <p class="task-hint">楽器種別 = クラリネット だったときにどのオブジェクト・処理を呼ぶか。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-3">4-3. ノートオン時の立ち上がり方</label>
+  <p class="task-hint">リードの振動感を出すために何をするか（アタック中だけフィルタを開く 等）。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-4">4-4. ノートオフ時の減衰方法</label>
+  <p class="task-hint">Release で自然に消すか、別処理を挟むか。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c4-5">4-5. 音切り替え時に不自然にならない工夫</label>
+  <p class="task-hint">レガート処理／Portamento／前音 Release の残し方 など。</p>
+  <div class="answer-box" contenteditable="true" data-key="a4-5" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>5. クラリネット特有の検討事項</h2>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-1">5-1. 奇数次倍音中心で音色を作るべきか</label>
+  <p class="task-hint">判断と根拠。採用する場合の実装手段も。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-2">5-2. フルートとの差別化ポイント</label>
+  <p class="task-hint">波形・倍音・フィルタ・ノイズ・ビブラート のどこで差を出すか。最低 2 つ挙げる。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-3">5-3. 中低域の厚みの表現</label>
+  <p class="task-hint">採用する手段（サブ Osc／バンドパス／倍音追加 など）。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task">
+  <label class="task-label"><input type="checkbox" data-key="c5-4">5-4. シンプル実装でクラリネットらしさを出す最小構成</label>
+  <p class="task-hint">時間がないときに何だけ残せば「クラリネットっぽく」聞こえるか。</p>
+  <div class="answer-box" contenteditable="true" data-key="a5-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>成果物</h2>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-1">D1. クラリネット音色設計方針（まとめ）</label>
+  <p class="task-hint">1〜2 章の結論を自分の言葉で整理。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-1" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-2">D2. 使用波形・倍音・フィルタ・ADSR の案（パラメータ表）</label>
+  <p class="task-hint">実装で使う具体値。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-2" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-3">D3. 必要な通信データ項目</label>
+  <p class="task-hint">Arduino ↔ Processing の取り決め。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-3" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-4">D4. Processing 側の再生処理設計</label>
+  <p class="task-hint">擬似コードまたは実コード。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-4" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<div class="task deliverable">
+  <label class="task-label"><input type="checkbox" data-key="cd-5">D5. パラメータ表・擬似コード（任意）</label>
+  <p class="task-hint">発表で示せる形に。</p>
+  <div class="answer-box" contenteditable="true" data-key="ad-5" data-placeholder="書き込み（自動保存）"></div>
+</div>
+
+<h2>検証（最終チェック）</h2>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-1">V1. 実際のクラリネット音と聴き比べて「クラリネットっぽく」聞こえるか</label>
+  <p class="task-hint">YouTube 等でクラリネット単音を再生し、自分の出力と比較。加えて、フルート担当の音と並べて聞き、差別化できているかも確認。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-1" data-placeholder="聞き比べた所感・気づいた差分を書き込み"></div>
+</div>
+
+<div class="task verify">
+  <label class="task-label"><input type="checkbox" data-key="cv-2">V2. 波形スペクトルを可視化し、調べた本物の波形と形が近いか確認</label>
+  <p class="task-hint">Processing 出力を WAV 保存 → Python（numpy + matplotlib）や Audacity でスペクトル表示 → Web で調べたクラリネット波形スペクトル画像と比較。Python スクリプトは AI に書かせて OK。</p>
+  <div class="answer-box" contenteditable="true" data-key="av-2" data-placeholder="比較結果（倍音分布・奇数次優勢の度合い など）"></div>
+</div>
+
+<h2>参考：AI との付き合い方</h2>
+<p>AI（Claude / ChatGPT）は「何も知らない状態の質問」には平均的な答えしか返しません。次のステップで使うと精度が上がります。</p>
+<ol>
+  <li>Wikipedia・解説記事・Web 画像検索でクラリネットの基礎知識を 10 分だけ入れる</li>
+  <li>「クラリネットは閉管楽器で奇数倍音が支配的と聞いたが、処理実装上は何倍音まで・どのレベルで入れるのが妥当？」のように<strong>前提をこちらから提示して聞く</strong></li>
+  <li>コード依頼時は「processing.sound の Pulse・LowPass・Env を使って」のように<strong>使う API を指定</strong>すると、存在しないメソッドを捏造されにくい</li>
+</ol>
+
+<h2>付録：実装のたたき台（構造サンプル）</h2>
+<pre><code>// ※ クラス名・メソッド名・引数は processing.sound 公式リファレンスで要確認
+
+import processing.serial.*;
+import processing.sound.*;
+
+Serial port;
+// ClarinetVoice 等を自分の設計で宣言
+
+void setup() {
+  size(400, 200);
+  // port = new Serial(this, Serial.list()[?], ?);
+  // port.bufferUntil('\n');
+}
+
+void draw() { background(240); }
+
+void serialEvent(Serial p) {
+  // 1. readStringUntil('\n')
+  // 2. カンマで split → instrument / event / note / velocity
+  // 3. instrument == "C" ならクラリネット処理
+  // 4. event に応じて noteOn / noteOff
+}
+</code></pre>
+
+<div class="save-indicator" id="saveIndicator">保存しました</div>
+
+<script>
+(function(){
+  const keyPrefix = 'ws:' + document.title + ':';
+  const indicator = document.getElementById('saveIndicator');
+  let hideTimer;
+
+  function flashSaved() {
+    indicator.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => indicator.classList.remove('show'), 800);
+  }
+
+  function togglePlaceholder(el) {
+    const html = el.innerHTML.trim();
+    const isEmpty = html === '' || html === '<br>' || html === '<br/>';
+    el.classList.toggle('is-empty', isEmpty);
+  }
+
+  document.querySelectorAll('[contenteditable="true"][data-key]').forEach(el => {
+    const storageKey = keyPrefix + el.dataset.key;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) el.innerHTML = saved;
+    togglePlaceholder(el);
+    el.addEventListener('input', () => {
+      localStorage.setItem(storageKey, el.innerHTML);
+      togglePlaceholder(el);
+      flashSaved();
+    });
+    el.addEventListener('blur', () => togglePlaceholder(el));
+  });
+
+  document.querySelectorAll('input[type="checkbox"][data-key]').forEach(el => {
+    const storageKey = keyPrefix + el.dataset.key;
+    if (localStorage.getItem(storageKey) === '1') el.checked = true;
+    el.addEventListener('change', () => {
+      localStorage.setItem(storageKey, el.checked ? '1' : '0');
+      flashSaved();
+    });
+  });
+
+  window.exportAnswers = function() {
+    const data = {};
+    Object.keys(localStorage).filter(k => k.startsWith(keyPrefix)).forEach(k => {
+      data[k.slice(keyPrefix.length)] = localStorage.getItem(k);
+    });
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'clarinet_design_answers.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  window.importAnswers = function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          Object.entries(data).forEach(([k,v]) => localStorage.setItem(keyPrefix + k, v));
+          location.reload();
+        } catch(err) { alert('読み込みに失敗しました: ' + err.message); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  window.clearAll = function() {
+    if (!confirm('全ての記入内容を削除します。よろしいですか？')) return;
+    Object.keys(localStorage).filter(k => k.startsWith(keyPrefix)).forEach(k => localStorage.removeItem(k));
+    location.reload();
+  };
+})();
+</script>
+
+</body>
+</html>
