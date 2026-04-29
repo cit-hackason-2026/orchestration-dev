@@ -11,6 +11,10 @@ clarinet/
 ├── clarinet_design_answers.json    ← 自分で作った設計シートの回答などを入れる JSON
 ├── arduino/                        ← Arduino スケッチ (.ino)
 ├── processing/                     ← Processing スケッチ (.pde)
+├── sound/                          ← 音源と FFT スペクトル
+│   ├── sample/                     ← 目標とする音 (本物の楽器の録音など)
+│   ├── output/                     ← 実際にこの楽器で作れた音
+│   └── spectrum/                   ← FFT で解析したスペクトル画像
 └── memo/                           ← なんでも置いてOKの自由スペース
 ```
 
@@ -32,6 +36,14 @@ clarinet/
 - **`processing/`**
   PC 側で楽譜・タイミング・UI を扱う Processing のコードを置きます。 `.pde` ファイルを Processing IDE で開きます。
   Arduino とはシリアル通信 (USB) で繋ぐ想定です。具体的な通信フォーマットは[`../sync/同期方針計画書.html`](../sync/同期方針計画書.html) を参照。
+
+- **`sound/`**
+  音に関するものをまとめておくディレクトリです。中は 3 つに分かれています:
+  - **`sound/sample/`** … **目標とする音** をここに入れます。本物のクラリネットの録音や、お手本にしたい音源 (`.wav` / `.mp3` など)。「これに近付けたい」というゴールを示すファイルです。
+  - **`sound/output/`** … **実際にこの楽器で作れた音** をここに入れます。試作の段階ごとに `output_v1.wav`, `output_v2.wav` のように残しておくと、改善の経過が分かって後で発表のときも便利です。
+  - **`sound/spectrum/`** … 上の音を **FFT で解析した結果のスペクトル画像** (`.png` など) を入れます。 `sample_fft.png`, `output_v1_fft.png` のように、元になった音と対応が分かる名前にしてください。
+
+  > FFT の解析は Processing の FFT ライブラリ、 Audacity の「スペクトル表示」、 Python (`numpy.fft` + `matplotlib`) など、好きなツールでOK。出力した画像をここに置けば十分です。
 
 - **`memo/`**
   気軽に何でも置いていい自由スペース。手書きメモのスキャン、参考にした図、買った部品のリスト、配線写真、検討中のアイデアなど、 **「このディレクトリにあると後で見直せて助かる」** ものを入れておく場所です。
