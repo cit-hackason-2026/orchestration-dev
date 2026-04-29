@@ -20,6 +20,10 @@ orchestration-dev/
 │   ├── clarinet_design_answers.json     ← 設計シートの回答 (自分で埋める)
 │   ├── arduino/                         ← Arduino スケッチ (.ino)
 │   ├── processing/                      ← Processing スケッチ (.pde)
+│   ├── sound/                           ← 音源と FFT スペクトル
+│   │   ├── sample/                      ← 目標とする音 (本物の楽器録音など)
+│   │   ├── output/                      ← 実際にこの楽器で作れた音
+│   │   └── spectrum/                    ← FFT で解析したスペクトル画像
 │   └── memo/                            ← 自由スペース (写真・メモ等何でもOK)
 ├── flute/        (同上の構成)
 ├── organ/        (同上の構成)
