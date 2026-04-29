@@ -153,6 +153,28 @@ git commit -m "clarinet: MIDI ノート受信処理を追加"
 
 > `git add .` は **今いるディレクトリ以下の変更を全部** ステージに上げます。簡単ですが、関係ないファイルまで巻き込まないよう、コミット前に `git status` で何が含まれているか必ず確認してください。
 
+### 一部のファイルだけコミットしたいとき
+
+`git add .` だと余計な変更まで含まれてしまうことがあります。
+**特定のファイルだけ** をコミットしたいときは、ファイル名を直接指定します。
+
+```bash
+# 1 ファイルだけ
+git add clarinet/arduino/clarinet.ino
+
+# 複数ファイルをまとめて (スペース区切り)
+git add clarinet/arduino/clarinet.ino clarinet/processing/clarinet.pde
+
+# ディレクトリ単位で
+git add clarinet/arduino/
+```
+
+ステージに上げるファイルを選んだら、 `git status` で **緑色 (Changes to be committed)** に出ているファイルだけがコミットに含まれることを確認してから `git commit -m "..."` してください。
+
+> **どっちを使うべき?**
+> - 自分が変更したのが 1 件の作業に関するものだけ → `git add .` でOK
+> - 複数の作業が混ざっている / 設定ファイルが意図せず変わっている → ファイル指定の方が安全
+
 メッセージは **「楽器名: 何をしたか」** の形にすると見やすいです。
 
 ---
