@@ -18,14 +18,9 @@ void setup() {
 
   delay(500);
 
-//   sendConfig(0x10, 0, 16, 1);
-//   sendConfig(0x11, 0, 16, 2);
-
-
-for (byte i = 0; i < NUM_SLAVES; i++) {
+  for (byte i = 0; i < NUM_SLAVES; i++) {
     sendConfig(slaveADRs[i], i * 2, 16, i + 1);
   }
-
 
   delay(100);
 
@@ -40,15 +35,13 @@ void loop() {
   if ((long)(now - nextSyncUs) >= 0) {
     sendSyncToAll(global_bar, bpmX10);
 
-    Serial.print("SYNC global_bar=");
-    Serial.println(global_bar);
-
     global_bar++;
     nextSyncUs += calcBarUs(bpmX10);
   }
 }
 
 unsigned long calcBarUs(uint16_t bpm_x10) {
+  if (bpm_x10 == 0) return 2000000UL;
   return 60000000UL * 4UL * 10UL / bpm_x10;
 }
 

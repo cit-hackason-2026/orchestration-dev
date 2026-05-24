@@ -105,7 +105,6 @@ void draw() {
 void serialEvent(Serial port) {
   while (port.available() > 0) {
     int b = port.read() & 0xFF;
-    println("rx: " + hex(b));  // ← 追加: バイトが届いているか確認
     parseSerialByte(b);
   }
 }
@@ -162,7 +161,6 @@ void processNoteEvent(int instId, int pitch, int vel, int dur8ms) {
   // Minimで即時再生 (startTime=0 → 即時)
   out.pauseNotes();
   if (instId == INST_CLARINET) {
-    println("playNote called");  // ← 追加s
     out.playNote(0.0, durationSec,
       new ClarinetInstrument(freqHz, amp, durationSec));
   }

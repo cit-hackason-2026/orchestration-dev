@@ -2,18 +2,13 @@
 // きらきら星を輪唱するArduinoスレーブ
 // I2CでSYNC受信し、バイナリSerialでProcessingへ音符イベントを送信する
 //
-// 4台のスレーブに同じコードを書き込む。
-// 各台の I2Cアドレスは MY_I2C_ADDRESS を書き換えて対応する:
-//   part1: 0x10 (entry_delay=0)
-//   part2: 0x11 (entry_delay=2)
-//   part3: 0x12 (entry_delay=4)
-//   part4: 0x13 (entry_delay=6)
+// フルートスレーブ: I2Cアドレス 0x10 (entry_delay=0)
 // ─────────────────────────────────────────────────────────────
 
 #include <Wire.h>
 #include <avr/pgmspace.h>
 
-// ─── I2Cアドレス（4台で書き換える箇所はここだけ）─────────────
+// ─── I2Cアドレス ──────────────────────────────────────────────
 #define MY_I2C_ADDRESS 0x10
 
 // ─── I2Cコマンド定数 ──────────────────────────────────────────
@@ -81,12 +76,9 @@ volatile bool     newData       = false;
 volatile uint16_t rxBar         = 0;
 volatile uint16_t rxBpmX10      = 0;
 volatile byte     rxEntryOffset = 0;
-volatile byte     rxLoopLength  = 0;
-volatile byte     rxPartId      = 0;
 volatile unsigned long rxTimeUs = 0;
 
 // ─── 演奏状態 ─────────────────────────────────────────────────
-uint16_t global_bar       = 0;
 uint16_t bpmX10           = 1200;       // デフォルト120BPM
 unsigned long barStartUs  = 0;
 unsigned long barLengthUs = 2000000;    // 2秒/小節 (120BPM)
@@ -114,7 +106,6 @@ void loop() {
     interrupts();
 
     if (cmd == CMD_SYNC) {
-      global_bar   = bar;
       bpmX10       = bpm;
       barStartUs   = t;
       barLengthUs  = calcBarUs(bpm);
@@ -163,8 +154,8 @@ void receiveEvent(int howMany) {
   else if (cmd == CMD_CONFIG && howMany == 4) {
     rxCmd         = cmd;
     rxEntryOffset = Wire.read();
-    rxLoopLength  = Wire.read();
-    rxPartId      = Wire.read();
+    Wire.read();
+    Wire.read();
     newData       = true;
   }
   else {
@@ -214,6 +205,6 @@ void sendNoteEvent(byte pitch, byte durBeatsX10) {
 
 // ─── ユーティリティ ───────────────────────────────────────────
 unsigned long calcBarUs(uint16_t bpm_x10) {
-  // 4/4拍子 1小節 = 4拍、BPM×10で受け取る
+  if (bpm_x10 == 0) return 2000000UL;
   return 60000000UL * 4UL * 10UL / bpm_x10;
 }

@@ -8,7 +8,7 @@
 #include <Wire.h>
 #include <avr/pgmspace.h>
 
-// ─── I2Cアドレス（4台で書き換える箇所はここだけ）─────────────
+// ─── I2Cアドレス ──────────────────────────────────────────────
 #define MY_I2C_ADDRESS 0x12
 
 // ─── I2Cコマンド定数 ──────────────────────────────────────────
@@ -75,12 +75,9 @@ volatile bool     newData       = false;
 volatile uint16_t rxBar         = 0;
 volatile uint16_t rxBpmX10      = 0;
 volatile byte     rxEntryOffset = 0;
-volatile byte     rxLoopLength  = 0;
-volatile byte     rxPartId      = 0;
 volatile unsigned long rxTimeUs = 0;
 
 // ─── 演奏状態 ─────────────────────────────────────────────────
-uint16_t global_bar       = 0;
 uint16_t bpmX10           = 1200;
 unsigned long barStartUs  = 0;
 unsigned long barLengthUs = 2000000;
@@ -108,7 +105,6 @@ void loop() {
     interrupts();
 
     if (cmd == CMD_SYNC) {
-      global_bar   = bar;
       bpmX10       = bpm;
       barStartUs   = t;
       barLengthUs  = calcBarUs(bpm);
@@ -157,8 +153,8 @@ void receiveEvent(int howMany) {
   else if (cmd == CMD_CONFIG && howMany == 4) {
     rxCmd         = cmd;
     rxEntryOffset = Wire.read();
-    rxLoopLength  = Wire.read();
-    rxPartId      = Wire.read();
+    Wire.read();
+    Wire.read();
     newData       = true;
   }
   else {
@@ -206,5 +202,6 @@ void sendNoteEvent(byte pitch, byte durBeatsX10) {
 
 // ─── ユーティリティ ───────────────────────────────────────────
 unsigned long calcBarUs(uint16_t bpm_x10) {
+  if (bpm_x10 == 0) return 2000000UL;
   return 60000000UL * 4UL * 10UL / bpm_x10;
 }
