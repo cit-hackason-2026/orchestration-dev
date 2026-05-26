@@ -1,0 +1,152 @@
+\documentclass[uplatex,dvipdfmx]{jlreq}
+\usepackage[fleqn,tbtags]{mathtools}
+\usepackage{jlreq-deluxe}
+\usepackage[noalphabet]{pxchfon} % must be after otf package
+\usepackage{stix2} %欧文＆数式フォント
+\usepackage[fleqn,tbtags]{mathtools} % 数式関連 (w/ amsmath)
+\usepackage{hira-stix} % ヒラギノフォント＆STIX2 フォント代替定義（Warning回避）
+
+\usepackage{url}
+\usepackage{float}
+
+\usepackage{etoolbox}\pretocmd{\section}{\par\noindent\rule{\linewidth}{0.4pt}\par}{}{}
+\usepackage[dvipdfmx,hidelinks]{hyperref}
+\usepackage{pxjahyper}
+
+\begin{document}
+
+{\LARGE \textbf{作業ログ}}
+
+報告者：佐藤 夏美（25G1062）
+
+報告日：2026年5月26日
+
+プロジェクト名：受動的環境介入によるメンタルヘルス支援：大学空間における自動演奏装置の提案
+
+\section{進捗サマリー（要約）}
+\begin{itemize}
+  \item 全体進捗率：50\%（クラリネット音色設計）
+  \item マイルストーン達成状況：進行中
+  \item 主要成果：
+  \begin{itemize}
+    \item FFT解析完了・倍音比率の取得（実測クラリネット音源の奇数倍音優勢を確認）
+    \item クラリネット音色作成（8倍音の加算合成・ローパス・ADSR）
+  \end{itemize}
+  \item 重大課題（影響度：高）：
+  \begin{itemize}
+    \item なし
+  \end{itemize}
+\end{itemize}
+
+\section{作業ログ（詳細トラッキング）}
+\begin{table}[H]
+  \centering
+  \begin{tabular}{p{2.2cm}p{1cm}p{1cm}p{1cm}p{1cm}p{2.2cm}p{2.2cm}}
+\hline
+作業項目 & 開始日 & 予定完了日 & 状態 & 進捗率 & 依存関係・ブロッカー & コメント \\ \hline \hline
+音色調査（クラリネットの特徴） & 5/20 & 5/21 & 完了 & 100\% & - & 奇数倍音優勢を資料で確認 \\ \hline
+FFT解析・倍音比率取得 & 5/21 & 5/22 & 完了 & 100\% & 実測音源 & 第8倍音まで実測 \\ \hline
+clarinet1.pde作成 & 5/22 & 5/26 & 完了 & 100\% & FFTデータ & 8倍音・LPF・ADSR \\ \hline
+  \end{tabular}
+\end{table}
+
+\section{課題管理}
+\begin{table}[H]
+  \centering
+  \begin{tabular}{p{2.2cm}p{2.2cm}p{1.3cm}p{1.3cm}p{2.2cm}p{1cm}p{1.3cm}}
+\hline
+課題 & 発生原因 & 影響度 & 優先度 & 対策 & 期限 & 状態 \\ \hline \hline
+機械音感 & ビブラートや楽器特有の音の鳴り方の不足 & 中 & 中 & 音域連動を調整，新たな要素の追加検討 & 6/2 & 対応中 \\ \hline
+  \end{tabular}
+\end{table}
+※影響度＝プロジェクトへのインパクト　※優先度＝対応の緊急性
+
+\section{AI利用状況と検証（再現性重視）}
+\subsection{利用内容}
+\begin{itemize}
+  \item 利用目的：設計・実装
+  \item 入力（プロンプト要旨）：
+  \begin{itemize}
+    \item 担当箇所の設計資料をもとに加算合成＋3系統ADSR＋音程連動ローパスでクラリネット音色設計を依頼
+  \end{itemize}
+  \item 出力概要：
+  \begin{itemize}
+    \item 倍音テーブルから \texttt{WavetableGenerator.gen10} で波形生成→\texttt{Oscil}→\texttt{MoogFilter}（LP）→\texttt{ADSR} と接続し，リードノイズ・ブレスノイズを別系統のADSRで重ねる設計案
+  \end{itemize}
+\end{itemize}
+
+\subsection{検証方法}
+※第三者が再現できるレベルで記述
+\begin{itemize}
+  \item 検証手法：
+  \begin{itemize}
+    \item FFT解析（実測との比較）
+    \item 担当箇所の資料との照合
+    \item 実機での実行と聴感確認
+  \end{itemize}
+  \item 参照資料：
+  \begin{itemize}
+    \item 実測に用いたクラリネット音源：MTG（Music Technology Group, Universitat Pompeu Fabra）, freesound.org（音源番号248359）\\
+          \url{https://freesound.org/people/MTG/sounds/248359/}
+    \item Processing 公式リファレンス：The Processing Foundation\\
+          \url{https://processing.org/reference/}
+    \item Minim 公式ドキュメント\\
+          \url{https://code.compartmental.net/minim/}
+  \end{itemize}
+  \item 検証手順：
+  \begin{itemize}
+    \item 作成した音色が奇数倍音優勢かを確認する
+    \item AI出力の関数構成を読み，想定通りになっているか確認する
+    \item 再生し，クラリネットらしい音色になっているか聴いて確認する
+  \end{itemize}
+\end{itemize}
+
+\subsection{ファクトチェック結果}
+\begin{itemize}
+  \item 一致点：
+  \begin{itemize}
+    \item FFT解析の結果，奇数倍音優勢の構造が確認できた
+    \item 関数構成と処理経路（加算合成→LPF→ADSR）は担当箇所の設計資料および Minim・Processing 公式の記法と整合した
+    \item 改善の余地はあるがクラリネットらしい音色を聴感より確認した
+  \end{itemize}
+  \item 不一致・疑義：
+  \begin{itemize}
+    \item AI提示のADSRやフィルタなどの値は実際の音と比べ調整の余地を感じた
+  \end{itemize}
+  \item 最終判断：
+  \begin{itemize}
+    \item 一部採用．関数構成・処理経路はAI案を採用し，ADSRやフィルタなどの値は調節した
+  \end{itemize}
+  \item 根拠：
+  \begin{itemize}
+    \item FFT解析および聴感による結果
+  \end{itemize}
+\end{itemize}
+
+\section{次回計画}
+\begin{itemize}
+  \item 目標：
+  \begin{itemize}
+    \item 音色をさらに本物に近づける
+  \end{itemize}
+  \item 達成基準：
+  \begin{itemize}
+    \item FFT解析結果をより実音源に近づけること
+    \item 実音源との比較でより自然なクラリネット音色になっていること
+  \end{itemize}
+  \item 期限：
+  \begin{itemize}
+    \item 2026年6月2日
+  \end{itemize}
+\end{itemize}
+
+\section{付録}
+\begin{itemize}
+  \item 添付資料：
+  \begin{itemize}
+    \item ソースコード：\url{https://github.com/7nanasi/hackathon}
+  \end{itemize}
+  \item 添付範囲：差分（今回着手分）
+\end{itemize}
+
+\end{document}
