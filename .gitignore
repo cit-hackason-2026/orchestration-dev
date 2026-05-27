@@ -1,2 +1,17 @@
 CLAUDE.md
 **/.DS_Store
+
+# 追跡対象外（作業中ファイル）
+flute/processing/flute2/flute2.pde
+flute/processing/flute3/flute3.pde
+flute/processing/flute4/flute4.pde
+sync/arduino/simpleI2C/master.ino
+sync/arduino/simpleI2C/simpelI2C.png
+sync/arduino/simpleI2C/slave.ino
+sync/arduino/sync-I2C/master.ino
+sync/arduino/sync-I2C/slave.ino
+sync/arduino/sync-I2C/sync-I2C.png
+sync/arduino/SYNCs/master.ino
+sync/arduino/SYNCs/slave1.ino
+sync/arduino/SYNCs/slave2.ino
+sync/arduino/SYNCs/SYNCs.png
