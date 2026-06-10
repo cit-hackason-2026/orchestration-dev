@@ -1,7 +1,7 @@
 #include <Wire.h>
 
-const byte NUM_SLAVES = 3;
-const byte slaveADRs[NUM_SLAVES] = {0x10, 0x11, 0x12};
+const byte NUM_SLAVES = 4;
+const byte slaveADRs[NUM_SLAVES] = {0x10, 0x11, 0x12, 0x13};
 
 const byte CMD_SYNC   = 0x01;
 const byte CMD_START  = 0x10;
@@ -18,9 +18,12 @@ void setup() {
 
   delay(500);
 
-  for (byte i = 0; i < NUM_SLAVES; i++) {
+  // 旋律スレーブ（2小節ずつずらして輪唱）
+  for (byte i = 0; i < 3; i++) {
     sendConfig(slaveADRs[i], i * 2, 16, i + 1);
   }
+  // ドラムスレーブ（遅延なしでメロディと同時スタート）
+  sendConfig(slaveADRs[3], 0, 12, 4);
 
   delay(100);
 
