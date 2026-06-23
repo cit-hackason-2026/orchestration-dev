@@ -21,10 +21,10 @@ final int BAUD_RATE = 115200;
 final int SERIAL_MARKER  = 0xAA;
 final int INST_CLARINET  = 0x02; // フルート=0x01、クラリネット=0x02
 
-// ─── ClarinetSerialSynth から引き継いだ音色設計用ADSR定数 ──────
-final float ATTACK  = 0.400f; // アタック上限: 最大0.4秒かけて音量が上がる
+// ─── 音色設計/clarinet2/clarinet.pde と揃えたADSR定数 ──────────
+final float ATTACK  = 0.400f; // アタック: 0.4秒かけて音量が上がる
 final float SUSTAIN = 0.95f;  // サスティン: 持続中はピーク音量の95%を保つ
-final float RELEASE = 0.300f; // リリース上限: 最大0.3秒かけて音量がゼロになる
+final float RELEASE = 0.200f; // リリース: 0.2秒かけて音量がゼロになる
 
 // ─── Minim関連 ────────────────────────────────────────────────
 Minim minim;
@@ -162,121 +162,77 @@ void processNoteEvent(int instId, int pitch, int vel, int dur8ms) {
   out.pauseNotes();
   if (instId == INST_CLARINET) {
     out.playNote(0.0, durationSec,
-      new ClarinetInstrument(freqHz, amp, durationSec));
+      new ClarinetInstrument(freqHz, amp));
   }
   out.resumeNotes();
 }
 
-// ─── クラリネット音声合成クラス（ClarinetSerialSynth.pdeから移植）──
+// ─── クラリネット音声合成クラス（音色設計/clarinet2/clarinet.pdeから移植）──
 class ClarinetInstrument implements Instrument {
-  ADSR mainEnv;   // メイン波形の音量包絡
-  ADSR reedEnv;   // リードノイズの音量包絡
-  ADSR breathEnv; // ブレスノイズの音量包絡
-  ADSR formEnv1;  // フォルマント1（500Hz付近）の音量包絡
-  ADSR formEnv2;  // フォルマント2（1200Hz付近）の音量包絡
-  Line pitchDrop; // アタック直後のピッチ変動を時間で制御するUGen
-  float freq;     // noteOn後も参照するためフィールドに保存
+  ADSR mainEnv;   // メイン波形の音量エンベロープ
+  ADSR reedEnv;   // リードノイズの音量エンベロープ
+  ADSR breathEnv; // ブレスノイズの音量エンベロープ
+  float freq;     // この音の基本周波数。noteOn後も参照するためフィールドに保存
 
-  ClarinetInstrument(float freq, float amp, float durationSec) {
+  ClarinetInstrument(float freq, float amp) { // 引数:周波数, 振幅
     this.freq = freq;
 
-    // 短い音でも立ち上がり切るように、音長に応じてADSRを圧縮する
-    float scaledAttack  = min(ATTACK, max(0.020f, durationSec * 0.35f));  // 最短20ms・音長の35%以下
-    float scaledRelease = min(RELEASE, max(0.030f, durationSec * 0.30f)); // 最短30ms・音長の30%以下
-    float scaledDecay   = min(0.040f, max(0.010f, durationSec * 0.15f));  // 最短10ms・最長40ms
-    float reedDecay     = min(0.150f, max(0.020f, durationSec * 0.35f));  // リードノイズは少し長めに残す
-    float breathSustain = max(0.15f, SUSTAIN * 0.8f);                     // 息成分のサスティンはメインより少し小さくする
-
-    // 奇数倍音を中心に強めたクラリネット倍音設計
+    // ── 波形・発振器 ──
     float[] harmonicAmp = {
-      1.000f, 0.013f, 1.216f, 0.023f, // 1f(基音), 2f, 3f(3倍音が基音より強い), 4f
-      0.447f, 0.011f, 0.132f, 0.039f, // 5f, 6f, 7f, 8f
-      0.070f, 0.007f, 0.045f, 0.005f, // 9f, 10f, 11f, 12f
-      0.028f, 0.004f, 0.018f, 0.003f  // 13f, 14f, 15f, 16f
+      1.000f, 0.013f, 1.216f, 0.023f,    // h1(基音), h2, h3, h4
+      0.447f, 0.011f, 0.132f, 0.039f,    // h5, h6, h7, h8
     };
-    Waveform wf = WavetableGenerator.gen10(8192, harmonicAmp); // 倍音配列から8192点のウェーブテーブルを生成する
-    Oscil osc = new Oscil(freq, amp, wf);                      // 生成した波形で基本発振器を作る
+    Waveform wf  = WavetableGenerator.gen10(8192, harmonicAmp);
+    Oscil    osc = new Oscil(freq, amp, wf);
 
-    // ビブラート: 4.5Hz / 15セント (控えめな深さ)
-    float wobbleDepth = freq * (pow(2, 15.0f / 1200.0f) - 1.0f); // 15セントをHz幅に変換する
-    Oscil wobble = new Oscil(4.5f, wobbleDepth, Waves.SINE);
+    // ── ビブラート（周波数合成）──
+    float  wobbleDepth = freq * (pow(2, 5.0f / 1200.0f) - 1.0f); // 5セントをHz幅に変換
+    Oscil  wobble      = new Oscil(5.0f, wobbleDepth, Waves.SINE);
+    Summer freqSum     = new Summer();
+    new Constant(freq).patch(freqSum); // ベース周波数
+    wobble.patch(freqSum);             // ビブラート
+    freqSum.patch(osc.frequency);
 
-    // アタック時のピッチ変動(pitchDrop)とビブラートをSummerでベース周波数に合成する
-    pitchDrop = new Line();
-    Summer freqSum = new Summer();
-    new Constant(freq).patch(freqSum); // ベース周波数（固定値）をSummerに入力する
-    pitchDrop.patch(freqSum);          // ピッチ変動オフセット（アタック後にゼロになる）をSummerに入力する
-    wobble.patch(freqSum);             // ビブラートをSummerに入力する
-    freqSum.patch(osc.frequency);      // 合成した周波数値を発振器の周波数入力に接続する
+    // ── トーン系 ──
+    float      cutoff = min(3000.0f, freq * 8.0f); // 音程連動: C4≈2090Hz，上限3000Hz（実測ベース）
+    MoogFilter lpf    = new MoogFilter(cutoff, 0.0f, MoogFilter.Type.LP);
+    mainEnv           = new ADSR(amp, ATTACK, 0.040f, SUSTAIN, RELEASE);
 
-    // 音域による音色変化: C4付近は暗め、A4付近は明るめ
-    float cutoff    = constrain(map(freq, 261.0f, 880.0f, freq * 6.0f, freq * 16.0f), 600.0f, 11000.0f);
-    float resonance = map(freq, 261.0f, 880.0f, 0.0f, 0.15f);
-    MoogFilter lpf  = new MoogFilter(cutoff, resonance, MoogFilter.Type.LP);
-    osc.patch(lpf);
-    mainEnv = new ADSR(amp, scaledAttack, scaledDecay, SUSTAIN, scaledRelease);
-    lpf.patch(mainEnv);
+    // ── リードノイズ系（1200〜2800Hz）はじめの息の音──
+    Noise      noise = new Noise(0.1f, Noise.Tint.WHITE);
+    MoogFilter hpf   = new MoogFilter(1200.0f, 0.0f, MoogFilter.Type.HP);
+    MoogFilter nlpf  = new MoogFilter(2800.0f, 0.0f, MoogFilter.Type.LP);
+    reedEnv          = new ADSR(amp * 0.4f, 0.15f, 0.6f, 0.3f, 0.150f);
 
-    // フォルマント1 (500Hz付近: 管体の低域共鳴・シャルモー感)
-    Oscil fOsc1 = new Oscil(freq, amp * 0.06f, wf);
-    MoogFilter bp1 = new MoogFilter(500.0f, 0.6f, MoogFilter.Type.BP);
-    fOsc1.patch(bp1);
-    formEnv1 = new ADSR(amp * 0.06f, scaledAttack, scaledDecay, SUSTAIN * 0.7f, scaledRelease);
-    bp1.patch(formEnv1);
+    // ── ブレスノイズ系（100Hz以下・1段LPF）低周波域の雑音調整──
+    Noise      breathNoise = new Noise(0.02f, Noise.Tint.PINK);
+    MoogFilter blpf        = new MoogFilter(100.0f, 0.25f, MoogFilter.Type.LP);
+    breathEnv              = new ADSR(0.007f, ATTACK, 0.040f, SUSTAIN * 1.0f, RELEASE);
 
-    // フォルマント2 (1200Hz付近: 木管らしい明るさ)
-    Oscil fOsc2 = new Oscil(freq, amp * 0.04f, wf);
-    MoogFilter bp2 = new MoogFilter(1200.0f, 0.5f, MoogFilter.Type.BP);
-    fOsc2.patch(bp2);
-    formEnv2 = new ADSR(amp * 0.04f, scaledAttack, scaledDecay, SUSTAIN * 0.5f, scaledRelease);
-    bp2.patch(formEnv2);
-
-    // リードノイズ: 1200〜2800Hzに絞ったホワイトノイズでリードの擦れ感を足す
-    Noise noise = new Noise(0.0003f, Noise.Tint.WHITE);
-    MoogFilter hpf = new MoogFilter(1200.0f, 0.0f, MoogFilter.Type.HP);
-    MoogFilter nlpf = new MoogFilter(2800.0f, 0.0f, MoogFilter.Type.LP);
-    noise.patch(hpf);
-    hpf.patch(nlpf);
-    reedEnv = new ADSR(0.0003f, min(0.010f, scaledAttack * 0.5f), reedDecay, 0.05f, min(0.080f, scaledRelease));
-    nlpf.patch(reedEnv);
-
-    // ブレスノイズ: 80Hz以下のピンクノイズで息のふくらみを足す
-    Noise breathNoise = new Noise(0.002f, Noise.Tint.PINK);
-    MoogFilter blpf = new MoogFilter(80.0f, 0.0f, MoogFilter.Type.LP);
-    breathNoise.patch(blpf);
-    breathEnv = new ADSR(0.002f, scaledAttack, scaledDecay, breathSustain, scaledRelease);
-    blpf.patch(breathEnv);
+    // ── 配線 ──
+    osc.patch(lpf);                    lpf.patch(mainEnv);
+    noise.patch(hpf);   hpf.patch(nlpf);   nlpf.patch(reedEnv);
+    breathNoise.patch(blpf);           blpf.patch(breathEnv);
   }
 
-  void noteOn(float duration) {
-    // アタック前半でピッチが2.5%上からずり落ちる(リードが鳴り始めの不安定感)
-    pitchDrop.activate(min(0.06f, duration * 0.15f), freq * 0.025f, 0.0f);
-
+  void noteOn(float duration) {                          // 発音開始時にMinimが呼ぶ
     mainEnv.patch(out);
     reedEnv.patch(out);
     breathEnv.patch(out);
-    formEnv1.patch(out);
-    formEnv2.patch(out);
 
-    mainEnv.unpatchAfterRelease(out);
+    mainEnv.unpatchAfterRelease(out);   // リリース後に自動切断する設定（フルートと同じ構造）
     reedEnv.unpatchAfterRelease(out);
     breathEnv.unpatchAfterRelease(out);
-    formEnv1.unpatchAfterRelease(out);
-    formEnv2.unpatchAfterRelease(out);
 
     mainEnv.noteOn();
     reedEnv.noteOn();
     breathEnv.noteOn();
-    formEnv1.noteOn();
-    formEnv2.noteOn();
   }
 
-  void noteOff() {
+  void noteOff() {                                       // 発音終了時にMinimが呼ぶ
     mainEnv.noteOff();
     reedEnv.noteOff();
     breathEnv.noteOff();
-    formEnv1.noteOff();
-    formEnv2.noteOff();
   }
 }
 
