@@ -7,7 +7,7 @@ const byte CMD_SYNC   = 0x01;
 const byte CMD_START  = 0x10;
 const byte CMD_CONFIG = 0x11;
 
-const int analogPin = A5;
+const int analogPin = A0;
 
 float current_bpm = 120.0f;   // 現在適用中のBPM
 float target_bpm  = 120.0f;   // ポテンショメータから得た目標BPM
