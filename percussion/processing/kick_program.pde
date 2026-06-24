@@ -1,105 +1,154 @@
 import processing.sound.*;
 
-SinOsc kickOsc;       // 基音（ボディ）
-SinOsc kickOsc2;      // 第2倍音（胴鳴り）
-WhiteNoise kickNoise; // ビーターのクリック源
-BandPass kickBp;      // クリック整形フィルタ
+final int NUM_VOICES = 20;
 
-float kickStartFreq = 140.0;  // ピッチ降下の開始（頭のパンチ）
-float kickEndFreq   = 52.0;   // 降下後の基音
+// =====================
+// 音源（20セット）
+// =====================
+SinOsc[] kickOsc = new SinOsc[NUM_VOICES];
+SinOsc[] kickOsc2 = new SinOsc[NUM_VOICES];
 
-float kickStartTime;
-boolean kickPlaying = false;  // 発音中フラグ
+WhiteNoise[] kickNoise = new WhiteNoise[NUM_VOICES];
+BandPass[] kickBp = new BandPass[NUM_VOICES];
 
+// =====================
+// 各セットの状態
+// =====================
+float[] kickStartTime = new float[NUM_VOICES];
+boolean[] kickPlaying = new boolean[NUM_VOICES];
+
+// 次に使用するセット番号
+int currentVoice = 0;
+
+// =====================
+// キックのパラメータ
+// =====================
+float kickStartFreq = 140.0;
+float kickEndFreq   = 52.0;
+
+// ==================================================
+// 初期化
+// ==================================================
 void setup() {
   size(400, 200);
 
-  kickOsc = new SinOsc(this);
-  kickOsc.play();
+  for (int i = 0; i < NUM_VOICES; i++) {
 
-  kickOsc2 = new SinOsc(this);
-  kickOsc2.play();
+    // 基音
+    kickOsc[i] = new SinOsc(this);
+    kickOsc[i].play();
 
-  kickNoise = new WhiteNoise(this);
-  kickNoise.play();
+    // 第2倍音
+    kickOsc2[i] = new SinOsc(this);
+    kickOsc2[i].play();
 
-  // クリックを中域に整形（hihat と同じ process(入力, 中心周波数, 帯域幅) の順）
-  // 中心1800Hz は「コツッ」狙いの初期値。耳で詰める前提。
-  kickBp = new BandPass(this);
-  kickBp.process(kickNoise, 1800, 1500);
+    // ホワイトノイズ
+    kickNoise[i] = new WhiteNoise(this);
+    kickNoise[i].play();
 
-  // 最初は無音
-  kickOsc.amp(0);
-  kickOsc2.amp(0);
-  kickNoise.amp(0);
+    // ノイズ整形用フィルタ
+    kickBp[i] = new BandPass(this);
+    kickBp[i].process(kickNoise[i], 1600, 1200);
+
+    // 初期状態は無音
+    kickOsc[i].amp(0);
+    kickOsc2[i].amp(0);
+    kickNoise[i].amp(0);
+
+    kickPlaying[i] = false;
+  }
 
   trigger();
 }
 
+// ==================================================
+// 毎フレーム実行
+// ==================================================
 void draw() {
   background(0);
 
-  if (kickPlaying) {
+  for (int i = 0; i < NUM_VOICES; i++) {
 
-    // 生の経過時間（秒）。各エンベロープに秒単位の時定数を持たせる。
-    float t = millis()/1000.0 - kickStartTime;
+    if (!kickPlaying[i]) continue;
 
-    // アタックランプ：最初の2msで0→1（発音開始のプチノイズ防止）
-    float attack = min(1.0, t / 0.002);
+    float t = millis()/1000.0 - kickStartTime[i];
 
-    // =========================
-    // ピッチ降下（約30msで降下しきる＝アコースティックのパンチ）
-    // =========================
+    // ------------------
+    // Attack
+    // ------------------
+    float attack = min(1.0, t / 0.08);
+
+    // ------------------
+    // Pitch Envelope
+    // ------------------
     float pitchEnv = exp(-t / 0.03);
-    float freq = kickEndFreq + (kickStartFreq - kickEndFreq) * pitchEnv;
-    kickOsc.freq(freq);
-    kickOsc2.freq(freq * 2.0);   // 第2倍音は常に基音の2倍
 
-    // =========================
-    // 音量エンベロープ
-    // =========================
-    // ボディ（基音）：808より短い余韻。合算クリップを避けるため上限0.7。
-    float bodyAmp = 0.7 * attack * exp(-t / 0.12);
-    kickOsc.amp(bodyAmp);
+    float freq =
+      kickEndFreq +
+      (kickStartFreq - kickEndFreq) * pitchEnv;
 
-    // 倍音：基音より速く減衰させ胴鳴り感を出す
-    float harmAmp = 0.2 * attack * exp(-t / 0.05);
-    kickOsc2.amp(harmAmp);
+    kickOsc[i].freq(freq);
+    kickOsc2[i].freq(freq * 2.0);
 
-    // =========================
-    // ビーターのクリック
-    // =========================
-    // 30msかけて減衰させてから0にする（途中で切ると段差ノイズが出るため、
-    // exp が十分小さくなる時刻まで伸ばす）。上限0.6でヘッドルーム確保。
+    // ------------------
+    // Amplitude Envelope
+    // ------------------
+    float bodyAmp =
+      0.9 * attack * exp(-t / 0.12);
+
+    float harmAmp =
+      0.3 * attack * exp(-t / 0.05);
+
+    kickOsc[i].amp(bodyAmp);
+    kickOsc2[i].amp(harmAmp);
+
+    // ------------------
+    // Click Noise
+    // ------------------
     float clickAmp = 0;
+
     if (t < 0.03) {
-      clickAmp = 0.6 * exp(-t / 0.004);
+      clickAmp =
+        0.25 * attack * exp(-t / 0.004);
     }
-    kickNoise.amp(clickAmp);
 
-    // =========================
-    // 終了処理（hihat にならう）
-    // ボディが十分小さくなったら全 amp を0にして発音停止。
-    // t の下限ガードは、アタックランプで bodyAmp が0に近い発音直後の
-    // 1フレームを誤って停止扱いしないため。
-    // =========================
+    kickNoise[i].amp(clickAmp);
+
+    // ------------------
+    // 終了判定
+    // ------------------
     if (t > 0.05 && bodyAmp < 0.001) {
-      kickOsc.amp(0);
-      kickOsc2.amp(0);
-      kickNoise.amp(0);
-      kickPlaying = false;
-    }
 
-    fill(255);
-    text("freq = " + nf(freq, 1, 1), 20, 20);
+      kickOsc[i].amp(0);
+      kickOsc2[i].amp(0);
+      kickNoise[i].amp(0);
+
+      kickPlaying[i] = false;
+    }
   }
+
+  fill(255);
+  text("Current Voice : " + currentVoice, 20, 20);
 }
 
+// ==================================================
+// マウスクリック
+// ==================================================
 void mousePressed() {
   trigger();
 }
 
+// ==================================================
+// 発音開始
+// ==================================================
 void trigger() {
-  kickStartTime = millis()/1000.0;
-  kickPlaying = true;
+
+  kickStartTime[currentVoice] =
+    millis()/1000.0;
+
+  kickPlaying[currentVoice] = true;
+
+  // 次のセットへ
+  currentVoice =
+    (currentVoice + 1) % NUM_VOICES;
 }
