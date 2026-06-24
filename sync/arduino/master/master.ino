@@ -7,15 +7,41 @@ const byte CMD_SYNC   = 0x01;
 const byte CMD_START  = 0x10;
 const byte CMD_CONFIG = 0x11;
 
+const int analogPin = A5;
+
+float current_bpm = 120.0f;   // 現在適用中のBPM
+float target_bpm  = 120.0f;   // ポテンショメータから得た目標BPM
+
+const float BPM_MIN = 60.0f;
+const float BPM_MAX = 180.0f;
+const float BPM_DELTA_MAX = 10.0f;
+
 uint16_t global_bar = 0;
 uint16_t bpmX10 = 1200;
 
 unsigned long nextSyncUs = 0;
 
+float clamp_range(float v) {
+  if (v < BPM_MIN) return BPM_MIN;
+  if (v > BPM_MAX) return BPM_MAX;
+  return v;
+}
+
+//ポテンショメータ読み取り
+// 0〜1023 → 60〜180BPM
+void readPotentiometer() {
+  int val = analogRead(analogPin);
+  target_bpm =
+      BPM_MIN +
+      ((float)val / 1023.0f) *
+      (BPM_MAX - BPM_MIN);
+  target_bpm = clamp_range(target_bpm);
+}
+
 void setup() {
   Wire.begin();
   Serial.begin(115200);
-
+  pinMode(analogPin, INPUT);
   delay(500);
 
   // 旋律スレーブ（2小節ずつずらして輪唱）
@@ -33,9 +59,20 @@ void setup() {
 }
 
 void loop() {
+  readPotentiometer();
   unsigned long now = micros();
 
   if ((long)(now - nextSyncUs) >= 0) {
+
+    //小節頭でのみBPM変更
+    float delta = target_bpm - current_bpm;
+    if (delta > BPM_DELTA_MAX)
+      delta = BPM_DELTA_MAX;
+    else if (delta < -BPM_DELTA_MAX)
+      delta = -BPM_DELTA_MAX;
+    current_bpm += delta;
+    bpmX10 = (uint16_t)(current_bpm * 10.0f + 0.5f);
+
     sendSyncToAll(global_bar, bpmX10);
 
     global_bar++;
