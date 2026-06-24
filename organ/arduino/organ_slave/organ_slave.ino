@@ -32,19 +32,6 @@ struct NoteEntry { byte pitch; byte barIndex; byte startBeat; byte durBeatsX10; 
 const byte TOTAL_BARS = 12;
 const byte SCORE_LEN  = 42;
 
-// --- BPM 同期（slave.ino に追記） ---
-float current_bpm = 120.0f;
-float pending_bpm = 120.0f;
-bool has_pending = false;
-const float BPM_MIN = 60.0f;
-const float BPM_MAX = 180.0f;
-   
-float clamp_range(float v){
-  if (v < BPM_MIN) return BPM_MIN;
-  if (v > BPM_MAX) return BPM_MAX;
-  return v;
-}
-
 const NoteEntry PROGMEM score[SCORE_LEN] = {
   // 小節0: C C G G
   {N_C4,  0, 0, 10}, {N_C4,  0, 1, 10}, {N_G4,  0, 2, 10}, {N_G4,  0, 3, 10},
@@ -71,6 +58,19 @@ const NoteEntry PROGMEM score[SCORE_LEN] = {
   // 小節11: D D C(2拍)
   {N_D4, 11, 0, 10}, {N_D4, 11, 1, 10}, {N_C4, 11, 2, 20},
 };
+
+// --- BPM 同期 ---
+float current_bpm = 120.0f;
+float pending_bpm = 120.0f;
+bool has_pending = false;
+const float BPM_MIN = 60.0f;
+const float BPM_MAX = 180.0f;
+   
+float clamp_range(float v){
+  if (v < BPM_MIN) return BPM_MIN;
+  if (v > BPM_MAX) return BPM_MAX;
+  return v;
+}
 
 // ─── 演奏スケジュールバッファ（最大4音符/小節）───────────────
 struct PendingNote {
@@ -190,6 +190,14 @@ void loadBarNotes(byte barMod, unsigned long barSt, unsigned long beatUs) {
     pendingCount++;
     if (pendingCount >= 4) break;
   }
+}
+
+// SYNC 受信コールバックから呼ぶ（受信バイト2つを渡す）
+void on_sync_payload_received(uint8_t payload_h, uint8_t payload_l){
+  uint16_t bpm10 = ((uint16_t)payload_h << 8) | (uint16_t)payload_l;
+  float bpm = ((float)bpm10) / 10.0f;
+  pending_bpm = clamp_range(bpm);
+  has_pending = true; // 小節頭まで保留
 }
 
 // ─── 発火タイムスタンプが来た音符をSerial送信 ─────────────────

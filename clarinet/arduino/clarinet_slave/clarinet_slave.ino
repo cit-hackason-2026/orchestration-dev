@@ -33,19 +33,6 @@ struct NoteEntry { byte pitch; byte barIndex; byte startBeat; byte durBeatsX10; 
 const byte TOTAL_BARS = 12;
 const byte SCORE_LEN  = 42;
 
-// --- BPM 同期（slave.ino に追記） ---
-float current_bpm = 120.0f;
-float pending_bpm = 120.0f;
-bool has_pending = false;
-const float BPM_MIN = 60.0f;
-const float BPM_MAX = 180.0f;
-   
-float clamp_range(float v){
-  if (v < BPM_MIN) return BPM_MIN;
-  if (v > BPM_MAX) return BPM_MAX;
-  return v;
-}
-
 const NoteEntry PROGMEM score[SCORE_LEN] = {
   // 小節0: C C G G
   {N_C4,  0, 0, 10}, {N_C4,  0, 1, 10}, {N_G4,  0, 2, 10}, {N_G4,  0, 3, 10},
@@ -72,6 +59,19 @@ const NoteEntry PROGMEM score[SCORE_LEN] = {
   // 小節11: D D C(2拍)
   {N_D4, 11, 0, 10}, {N_D4, 11, 1, 10}, {N_C4, 11, 2, 20},
 };
+
+// --- BPM 同期 ---
+float current_bpm = 120.0f;
+float pending_bpm = 120.0f;
+bool has_pending = false;
+const float BPM_MIN = 60.0f;
+const float BPM_MAX = 180.0f;
+
+float clamp_range(float v){
+  if (v < BPM_MIN) return BPM_MIN;
+  if (v > BPM_MAX) return BPM_MAX;
+  return v;
+}
 
 // ─── 演奏スケジュールバッファ（最大4音符/小節）───────────────
 struct PendingNote {
@@ -211,14 +211,12 @@ void on_sync_payload_received(uint8_t payload_h, uint8_t payload_l){
   pending_bpm = clamp_range(bpm);
   has_pending = true; // 小節頭まで保留
 }
-   
+
 // 小節頭で呼ぶ（既存のタイミング検出に追加）
 void onMeasureStart_bpm_slave(){
   if (has_pending){
     current_bpm = pending_bpm;
     has_pending = false;
-    // 実装：PLL／再生エンジンへ反映する関数を呼ぶ
-    // setPlaybackBpm(current_bpm);
   }
 }
 
