@@ -78,6 +78,9 @@ void loop() {
     global_bar++;
     nextSyncUs += calcBarUs(bpmX10);
   }
+
+  Serial.print("BPM:");
+  Serial.println(bpmX10 / 10);
 }
 
 unsigned long calcBarUs(uint16_t bpm_x10) {
