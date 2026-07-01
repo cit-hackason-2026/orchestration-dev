@@ -1,16 +1,13 @@
 // drum.pde
 // ArduinoからバイナリSerialでドラムイベントを受信し、
 // processing.soundライブラリでキック・ハイハットを再生する
-//
-// 起動するとコンソールに利用可能なシリアルポート一覧が表示される。
-// 番号を確認して SERIAL_PORT 定数を変更し再起動すること。
 // ─────────────────────────────────────────────────────────────
 
 import processing.sound.*;
 import processing.serial.*;
 
 // ─── シリアルポート設定（環境に合わせて変更する）──────────────
-final String SERIAL_PORT = "/dev/cu.usbmodem34B7DA636BDC2";
+final String SERIAL_PORT = "/dev/cu.usbmodemF412FA653DF02";
 final int BAUD_RATE = 115200;
 
 // ─── バイナリプロトコル定数 ───────────────────────────────────
@@ -32,9 +29,16 @@ int   rxCount  = 0;
 int[] rxBuf    = new int[3];
 
 // ─── デバッグ表示用 ──────────────────────────────────────────
-int    hitCount  = 0;
-String statusMsg = "Waiting for Arduino...";
-String lastHit   = "";
+int lastPitch = 0;
+int lastDurMs = 0;
+
+// ─── 疑似波形バッファ ─────────────────────────────────────────
+// processing.sound はマスター出力バッファを直接読めないため、
+// 発音中の振幅にホワイトノイズを乗せて循環バッファに書き込み、
+// Minim 系スケッチと同じ緑色の 2 段波形として描画する。
+final int WAVE_LEN = 512;
+float[]   waveBuf  = new float[WAVE_LEN];
+int       waveIdx  = 0;
 
 // ─── キック =====
 SinOsc     kickOsc;
@@ -53,7 +57,7 @@ float      hihatStart = -1;
 
 // ─── setup() ──────────────────────────────────────────────────
 void setup() {
-  size(800, 260);
+  size(512, 280);
   textSize(14);
 
   // キック
@@ -73,30 +77,20 @@ void setup() {
   hihatBP = new BandPass(this);
   hihatBP.process(hihatNoise, 7000, 4000);
 
-  // 利用可能なシリアルポートをコンソールに表示
-  println("=== 利用可能なシリアルポート ===");
-  String[] ports = Serial.list();
-  for (int i = 0; i < ports.length; i++) {
-    println("[" + i + "] " + ports[i]);
-  }
-  println("================================");
-  println("SERIAL_PORT 定数を上記から選んで書き換えてください");
-
   // シリアルポートを開く
   try {
-    myPort   = new Serial(this, SERIAL_PORT, BAUD_RATE);
-    statusMsg = "接続済み: " + SERIAL_PORT;
+    myPort = new Serial(this, SERIAL_PORT, BAUD_RATE);
   } catch (Exception e) {
-    statusMsg = "Serial エラー: " + e.getMessage();
-    println("シリアル接続失敗: " + e.getMessage());
   }
 }
 
-// ─── draw() ───────────────────────────────────────────────────
+// ─── draw()：波形表示 ────────────────────────────────────────
 void draw() {
-  background(0);
+  background(20);
 
   // ─── キック処理 ─────────────────────────────────────────────
+  float kickAmp      = 0;
+  float kickClickAmp = 0;
   if (kickHit) {
     float t = millis() / 1000.0 - kickStart;
     float x = constrain(t / kickEnvLen, 0, 1);
@@ -105,13 +99,13 @@ void draw() {
     float freq = kickEndFreq + (kickStartFreq - kickEndFreq) * pitchEnv;
     kickOsc.freq(freq);
 
-    float bodyAmp = 0.9 * exp(-4.0 * x);
-    kickOsc.amp(bodyAmp);
+    kickAmp = 0.9 * exp(-4.0 * x);
+    kickOsc.amp(kickAmp);
 
-    float clickAmp = (t < 0.003) ? 1.0 * (1.0 - t / 0.003) : 0;
-    kickNoise.amp(clickAmp);
+    kickClickAmp = (t < 0.003) ? 1.0 * (1.0 - t / 0.003) : 0;
+    kickNoise.amp(kickClickAmp);
 
-    if (bodyAmp < 0.001) {
+    if (kickAmp < 0.001) {
       kickOsc.amp(0);
       kickNoise.amp(0);
       kickHit = false;
@@ -119,41 +113,46 @@ void draw() {
   }
 
   // ─── ハイハット処理 ──────────────────────────────────────────
+  float hihatAmp = 0;
   if (hihatHit) {
     float t = (millis() - hihatStart) / 1000.0;
 
     float attack = min(1.0, t * 200.0);
     float decay  = exp(-20 * t);
-    float amp    = attack * decay;
-    hihatNoise.amp(amp * 5);
+    hihatAmp = attack * decay;
+    hihatNoise.amp(hihatAmp * 5);
 
     float freq = lerp(8000, 5000, t * 2.0);
     hihatBP.freq(freq);
 
-    if (amp < 0.001) {
+    if (hihatAmp < 0.001) {
       hihatNoise.amp(0);
       hihatHit = false;
     }
   }
 
-  // ─── 表示 ──────────────────────────────────────────────────
-  stroke(80);
-  line(width / 2, 0, width / 2, 200);
-  noStroke();
+  // ─── 疑似波形サンプルを循環バッファに 1 サンプル書き込む ───────
+  float amp = kickAmp + kickClickAmp + hihatAmp;
+  waveBuf[waveIdx] = amp * (random(2) - 1);
+  waveIdx = (waveIdx + 1) % WAVE_LEN;
+
+  // 左右チャンネル波形（同じデータを 2 段描画）
+  stroke(0, 200, 100);
+  noFill();
+  for (int i = 0; i < WAVE_LEN - 1; i++) {
+    int a = (waveIdx + i)     % WAVE_LEN;
+    int b = (waveIdx + i + 1) % WAVE_LEN;
+    line(i,     80  - waveBuf[a] * 60,
+         i + 1, 80  - waveBuf[b] * 60);
+    line(i,     170 - waveBuf[a] * 60,
+         i + 1, 170 - waveBuf[b] * 60);
+  }
 
   fill(255);
-  textSize(20);
-  textAlign(CENTER, CENTER);
-  text("KICK",   width / 4,     100);
-  text("HI-HAT", width * 3 / 4, 100);
-
-  fill(180);
-  textSize(14);
-  textAlign(LEFT, CENTER);
-  text(statusMsg, 10, 220);
-  text("受信ヒット数: " + hitCount, 10, 240);
-  if (!lastHit.equals("")) {
-    text("最終ヒット: " + lastHit, 10, 255);  // ← 追加
+  noStroke();
+  if (lastPitch > 0) {
+    text("MIDI=" + lastPitch + "  " + drumName(lastPitch)
+       + "  dur=" + lastDurMs + "ms", 10, 220);
   }
 }
 
@@ -185,7 +184,7 @@ void parseSerialByte(int b) {
       rxBuf[rxCount++] = b;
       if (rxCount >= 3) {
         if (rxInstId == INST_DRUM) {
-          processDrumEvent(rxBuf[0], rxBuf[1]);
+          processDrumEvent(rxBuf[0], rxBuf[1], rxBuf[2]);
         }
         rxState = 0;
       }
@@ -197,33 +196,31 @@ void parseSerialByte(int b) {
 }
 
 // ─── ドラムイベント処理 ──────────────────────────────────────
-// drumType: ドラム種別 (36=KICK, 42=HIHAT)
+// drumType: ドラム種別 (36=KICK, 42=HIHAT) — MIDIノート番号を流用
 // vel:      velocity (未使用、将来の音量制御用)
-void processDrumEvent(int drumType, int vel) {
+// dur8ms:   演奏時間 ÷ 8 (×8してmsに戻す、表示のみ)
+void processDrumEvent(int drumType, int vel, int dur8ms) {
   if (vel == 0) return;
 
-  hitCount++;
+  int durationMs = dur8ms * 8;
+
+  lastPitch = drumType;
+  lastDurMs = durationMs;
 
   if (drumType == DRUM_KICK) {
     kickStart = millis() / 1000.0;
     kickHit   = true;
-    lastHit   = "KICK";
   } else if (drumType == DRUM_HIHAT) {
     hihatStart = millis();
     hihatHit   = true;
-    lastHit    = "HI-HAT";
   }
 }
 
-// ─── マウスクリックでも鳴らせる（テスト用）─────────────────
-void mousePressed() {
-  if (mouseX < width / 2) {
-    kickStart = millis() / 1000.0;
-    kickHit   = true;
-  } else {
-    hihatStart = millis();
-    hihatHit   = true;
-  }
+// ─── ドラム種別（MIDIノート番号）→ 名前文字列（表示用）──────
+String drumName(int n) {
+  if (n == DRUM_KICK)  return "KICK";
+  if (n == DRUM_HIHAT) return "HI-HAT";
+  return "?";
 }
 
 // ─── stop() ───────────────────────────────────────────────────

@@ -3,8 +3,6 @@
 // Minimライブラリでクラリネット音を即時再生する
 //
 // 通信プロトコルは flute5_serial.pde に揃えている
-// 起動するとコンソールに利用可能なシリアルポート一覧が表示される。
-// 番号を確認して SERIAL_PORT 定数を変更し再起動すること。
 // ─────────────────────────────────────────────────────────────
 
 import ddf.minim.*;
@@ -13,7 +11,6 @@ import processing.serial.*;
 
 // ─── シリアルポート設定（環境に合わせて変更する）──────────────
 // Mac: "/dev/cu.usbmodem****"
-// 起動時にコンソールに番号が出るので確認して書き換える
 final String SERIAL_PORT = "/dev/cu.usbmodem1101";
 final int BAUD_RATE = 115200;
 
@@ -43,10 +40,8 @@ int   rxCount  = 0;
 int[] rxBuf    = new int[3]; // pitch, velocity, duration_8ms
 
 // ─── デバッグ表示用 ──────────────────────────────────────────
-int    noteCount = 0;
-int    lastPitch = 0;
-int    lastDurMs = 0;
-String statusMsg = "Waiting for Arduino...";
+int lastPitch = 0;
+int lastDurMs = 0;
 
 // ─── setup() ──────────────────────────────────────────────────
 void setup() {
@@ -57,26 +52,14 @@ void setup() {
   out   = minim.getLineOut();
   out.setTempo(120);
 
-  // 利用可能なシリアルポートをコンソールに表示
-  println("=== 利用可能なシリアルポート ===");
-  String[] ports = Serial.list();
-  for (int i = 0; i < ports.length; i++) {
-    println("[" + i + "] " + ports[i]);
-  }
-  println("================================");
-  println("SERIAL_PORT 定数を上記から選んで書き換えてください");
-
   // シリアルポートを開く
   try {
-    myPort   = new Serial(this, SERIAL_PORT, BAUD_RATE);
-    statusMsg = "接続済み: " + SERIAL_PORT;
+    myPort = new Serial(this, SERIAL_PORT, BAUD_RATE);
   } catch (Exception e) {
-    statusMsg = "Serial エラー: " + e.getMessage();
-    println("シリアル接続失敗: " + e.getMessage());
   }
 }
 
-// ─── draw()：波形表示 + ステータス ────────────────────────────
+// ─── draw()：波形表示 ────────────────────────────────────────
 void draw() {
   background(20);
 
@@ -92,12 +75,9 @@ void draw() {
 
   fill(255);
   noStroke();
-  text(statusMsg, 10, 210);
-  text("受信音符数: " + noteCount, 10, 230);
-
   if (lastPitch > 0) {
-    text("最終音符: MIDI=" + lastPitch + "  " + midiName(lastPitch)
-       + "  dur=" + lastDurMs + "ms", 10, 250);
+    text("MIDI=" + lastPitch + "  " + midiName(lastPitch)
+       + "  dur=" + lastDurMs + "ms", 10, 220);
   }
 }
 
@@ -153,10 +133,8 @@ void processNoteEvent(int instId, int pitch, int vel, int dur8ms) {
   float amp         = map(constrain(vel, 1, 127), 1, 127, 0.08, 0.52); // ClarinetSerialSynthと同じ音量レンジ
 
   // デバッグ記録
-  lastPitch  = pitch;
-  lastDurMs  = durationMs;
-  noteCount++;
-  statusMsg = "Playing MIDI " + pitch + " (" + midiName(pitch) + ")  " + durationMs + "ms";
+  lastPitch = pitch;
+  lastDurMs = durationMs;
 
   // Minimで即時再生 (startTime=0 → 即時)
   out.pauseNotes();
