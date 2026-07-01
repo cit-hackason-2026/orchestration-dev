@@ -7,7 +7,7 @@ import processing.sound.*;
 import processing.serial.*;
 
 // ─── シリアルポート設定（環境に合わせて変更する）──────────────
-final String SERIAL_PORT = "/dev/cu.usbmodem34B7DA636BDC2";
+final String SERIAL_PORT = "/dev/cu.usbmodemF412FA653DF02";
 final int BAUD_RATE = 115200;
 
 // ─── バイナリプロトコル定数 ───────────────────────────────────
@@ -151,7 +151,7 @@ void draw() {
   fill(255);
   noStroke();
   if (lastPitch > 0) {
-    text("最終音符: MIDI=" + lastPitch + "  " + drumName(lastPitch)
+    text("MIDI=" + lastPitch + "  " + drumName(lastPitch)
        + "  dur=" + lastDurMs + "ms", 10, 220);
   }
 }
@@ -213,21 +213,6 @@ void processDrumEvent(int drumType, int vel, int dur8ms) {
   } else if (drumType == DRUM_HIHAT) {
     hihatStart = millis();
     hihatHit   = true;
-  }
-}
-
-// ─── マウスクリックでも鳴らせる（テスト用）─────────────────
-void mousePressed() {
-  if (mouseX < width / 2) {
-    kickStart = millis() / 1000.0;
-    kickHit   = true;
-    lastPitch = DRUM_KICK;
-    lastDurMs = 0;
-  } else {
-    hihatStart = millis();
-    hihatHit   = true;
-    lastPitch = DRUM_HIHAT;
-    lastDurMs = 0;
   }
 }
 

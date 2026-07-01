@@ -76,7 +76,7 @@ void draw() {
   fill(255);
   noStroke();
   if (lastPitch > 0) {
-    text("最終音符: MIDI=" + lastPitch + "  " + midiName(lastPitch)
+    text("MIDI=" + lastPitch + "  " + midiName(lastPitch)
        + "  dur=" + lastDurMs + "ms", 10, 220);
   }
 }
