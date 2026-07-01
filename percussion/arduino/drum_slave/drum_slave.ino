@@ -121,7 +121,7 @@ volatile byte     rxEntryOffset = 0;
 volatile unsigned long rxTimeUs = 0;
 
 // ─── 演奏状態 ─────────────────────────────────────────────────
-uint16_t bpmX10           = 1200;
+uint16_t bpmX10           = 900;
 unsigned long barStartUs  = 0;
 unsigned long barLengthUs = 2000000;
 
