@@ -192,14 +192,6 @@ void loadBarNotes(byte barMod, unsigned long barSt, unsigned long beatUs) {
   }
 }
 
-// SYNC 受信コールバックから呼ぶ（受信バイト2つを渡す）
-void on_sync_payload_received(uint8_t payload_h, uint8_t payload_l){
-  uint16_t bpm10 = ((uint16_t)payload_h << 8) | (uint16_t)payload_l;
-  float bpm = ((float)bpm10) / 10.0f;
-  pending_bpm = clamp_range(bpm);
-  has_pending = true; // 小節頭まで保留
-}
-
 // ─── 発火タイムスタンプが来た音符をSerial送信 ─────────────────
 void firePendingNotes() {
   unsigned long now = micros();
