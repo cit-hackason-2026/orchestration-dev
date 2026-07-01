@@ -61,11 +61,11 @@ const NoteEntry PROGMEM score[SCORE_LEN] = {
 };
 
 // --- BPM 同期 ---
-float current_bpm = 120.0f;
-float pending_bpm = 120.0f;
+float current_bpm = 90.0f;
+float pending_bpm = 90.0f;
 bool has_pending = false;
 const float BPM_MIN = 60.0f;
-const float BPM_MAX = 180.0f;
+const float BPM_MAX = 120.0f;
 
 float clamp_range(float v){
   if (v < BPM_MIN) return BPM_MIN;
@@ -92,9 +92,9 @@ volatile byte     rxEntryOffset = 0;
 volatile unsigned long rxTimeUs = 0;
 
 // ─── 演奏状態 ─────────────────────────────────────────────────
-uint16_t bpmX10           = 1200;       // デフォルト120BPM
+uint16_t bpmX10           = 900;        // デフォルト90BPM
 unsigned long barStartUs  = 0;
-unsigned long barLengthUs = 2000000;    // 2秒/小節 (120BPM)
+unsigned long barLengthUs = 2000000;    // 2秒/小節 (90BPM)
 
 byte entry_offset = 0;   // CONFIGで受け取る開始遅延小節数
 bool started        = false;

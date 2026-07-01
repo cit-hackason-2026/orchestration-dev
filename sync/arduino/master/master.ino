@@ -9,15 +9,15 @@ const byte CMD_CONFIG = 0x11;
 
 const int analogPin = A0;
 
-float current_bpm = 120.0f;   // 現在適用中のBPM
-float target_bpm  = 120.0f;   // ポテンショメータから得た目標BPM
+float current_bpm = 90.0f;   // 現在適用中のBPM
+float target_bpm  = 90.0f;   // ポテンショメータから得た目標BPM
 
 const float BPM_MIN = 60.0f;
-const float BPM_MAX = 180.0f;
+const float BPM_MAX = 120.0f;
 const float BPM_DELTA_MAX = 10.0f;
 
 uint16_t global_bar = 0;
-uint16_t bpmX10 = 1200;
+uint16_t bpmX10 = 900;
 
 unsigned long nextSyncUs = 0;
 
