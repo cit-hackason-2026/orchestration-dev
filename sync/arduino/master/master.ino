@@ -28,7 +28,6 @@ float weightBuf[WEIGHT_SAMPLES] = {0, 0, 0};
 int weightIdx = 0;
 float lastWeight = 0.0f;        // 直近の重さ（3サンプル移動平均）
 bool playing = false;           // 現在演奏中か（重さ > 閾値）
-bool everStarted = false;       // 一度でも START を送ったか
 
 float current_bpm = 90.0f;   // 現在適用中のBPM
 float target_bpm  = 90.0f;   // ポテンショメータから得た目標BPM
@@ -102,16 +101,14 @@ void loop() {
   }
   bool present = (lastWeight > THRESHOLD);
 
-  // 置かれた瞬間: 演奏開始／再開
+  // 置かれた瞬間: 最初の小節から演奏開始
   if (present && !playing) {
     playing = true;
     servo.writeMicroseconds(MOVE_US);  // 演奏中はサーボ回転
     delay(2200);  // サーボが一周するのを待つ
-    if (!everStarted) {          // 最初の1回だけ START でスレーブ初期化
-      sendStartToAll();
-      everStarted = true;
-    }
-    nextSyncUs = micros();       // 復帰時のバースト送信を防ぎ即再開
+    global_bar = 0;              // 小節カウントをリセット
+    sendStartToAll();            // スレーブ側の演奏位置もリセット
+    nextSyncUs = micros();       // 即座に1小節目のSYNCを送る
   }
 
   // 取り除かれた瞬間: 通信停止＋サーボ停止
