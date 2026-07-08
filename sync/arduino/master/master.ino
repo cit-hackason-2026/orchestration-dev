@@ -20,7 +20,9 @@ HX711 scale;
 Servo servo;
 const int SERVO_PIN = 9;
 const float THRESHOLD = 50.0;   // この重さ(g)を超えている間だけ演奏。実測に合わせ調整
-int MOVE_US = 1480;             // 回転速度（将来 BPM 連動の余地。今回は固定）
+const int MOVE_US_SLOW = 1450;  // BPM最低時の回転速度
+const int MOVE_US_FAST = 1350;  // BPM最高時の回転速度
+int MOVE_US = MOVE_US_SLOW;
 const int STOP_US = 1500;       // 停止
 
 const int WEIGHT_SAMPLES = 3;   // start.ino の get_units(3) 相当の平滑化
@@ -135,6 +137,11 @@ void loop() {
       delta = -BPM_DELTA_MAX;
     current_bpm += delta;
     bpmX10 = (uint16_t)(current_bpm * 10.0f + 0.5f);
+
+    // BPMに応じてサーボ速度を更新（BPM高→1400寄り=速い、BPM低→1450寄り=遅い）
+    MOVE_US = map(bpmX10, (int)(BPM_MIN * 10), (int)(BPM_MAX * 10),
+                  MOVE_US_SLOW, MOVE_US_FAST);
+    servo.writeMicroseconds(MOVE_US);
 
     sendSyncToAll(global_bar, bpmX10);
 
